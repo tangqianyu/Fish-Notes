@@ -75,9 +75,9 @@ function TinyMCEEditor({ defaultValue, onChange }: TinyMCEEditorProps) {
 		scheduleHashtagDetection(editor);
 	}, []);
 
-	const skinUrl = theme === "dark" ? "/tinymce/skins/ui/oxide-dark" : "/tinymce/skins/ui/oxide";
+	const skinUrl = theme === "dark" ? "./tinymce/skins/ui/oxide-dark" : "./tinymce/skins/ui/oxide";
 
-	const contentCss = theme === "dark" ? "/tinymce/skins/content/dark/content.min.css" : "/tinymce/skins/content/default/content.min.css";
+	const contentCss = theme === "dark" ? "./tinymce/skins/content/dark/content.min.css" : "./tinymce/skins/content/default/content.min.css";
 
 	const contentStyle = THEME_CONTENT_STYLES[theme] || THEME_CONTENT_STYLES.light;
 
@@ -91,7 +91,7 @@ function TinyMCEEditor({ defaultValue, onChange }: TinyMCEEditorProps) {
 			height: "100%",
 			resize: false,
 			language: "zh_CN",
-			language_url: "/tinymce/langs/zh_CN.js",
+			language_url: "./tinymce/langs/zh_CN.js",
 			skin_url: skinUrl,
 			content_css: contentCss,
 			content_style: contentStyle,
@@ -170,7 +170,7 @@ function TinyMCEEditor({ defaultValue, onChange }: TinyMCEEditorProps) {
 
 	return (
 		<div className="flex-1 flex flex-col overflow-hidden tinymce-wrapper">
-			<Editor tinymceScriptSrc="/tinymce/tinymce.min.js" onInit={handleInit} initialValue={defaultValue} init={init} />
+			<Editor tinymceScriptSrc="./tinymce/tinymce.min.js" onInit={handleInit} initialValue={defaultValue} init={init} />
 		</div>
 	);
 }

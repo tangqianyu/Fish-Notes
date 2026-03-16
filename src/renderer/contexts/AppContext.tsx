@@ -146,7 +146,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const createNote = useCallback(async () => {
     const note = await window.api.notes.create();
     dispatch({ type: 'ADD_NOTE', note });
-  }, []);
+
+    // Auto-tag when creating a note under a tag view
+    if (state.viewMode === 'tag' && state.selectedTagId) {
+      const tag = state.tags.find((t) => t.id === state.selectedTagId);
+      if (tag) {
+        await window.api.tags.setNoteTags(note.id, [tag.name]);
+        await refreshTags();
+      }
+    }
+  }, [state.viewMode, state.selectedTagId, state.tags, refreshTags]);
 
   const selectNote = useCallback((id: string | null) => {
     dispatch({ type: 'SELECT_NOTE', id });

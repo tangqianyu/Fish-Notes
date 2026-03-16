@@ -31,7 +31,7 @@ export function getAllTags(): TagData[] {
       id: tags.id,
       name: tags.name,
       parentId: tags.parentId,
-      noteCount: sql<number>`(SELECT COUNT(*) FROM note_tags WHERE tag_id = ${tags.id})`,
+      noteCount: sql<number>`(SELECT COUNT(*) FROM note_tags WHERE note_tags.tag_id = ${tags.id} AND note_tags.note_id IN (SELECT id FROM notes WHERE is_trashed = 0))`,
       isPinned: tags.isPinned,
     })
     .from(tags)
@@ -59,7 +59,7 @@ export function getTagsByNoteId(noteId: string): TagData[] {
       id: tags.id,
       name: tags.name,
       parentId: tags.parentId,
-      noteCount: sql<number>`(SELECT COUNT(*) FROM note_tags WHERE tag_id = ${tags.id})`,
+      noteCount: sql<number>`(SELECT COUNT(*) FROM note_tags WHERE note_tags.tag_id = ${tags.id} AND note_tags.note_id IN (SELECT id FROM notes WHERE is_trashed = 0))`,
       isPinned: tags.isPinned,
     })
     .from(tags)

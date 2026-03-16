@@ -95,7 +95,7 @@ renderer 通过 `window.api.*` 调用 → preload.ts → ipcRenderer.invoke → 
 
 ## 数据库
 
-SQLite 文件位置: `~/.config/Fish Notes/fish-notes.db`
+SQLite 文件位置: `~/Library/Application Support/Fish Notes/`(macOS)
 
 **三张表**:
 - `notes`: id, title, content (HTML), content_text (纯文本, FTS用), content_format, created_at, updated_at, is_trashed, is_pinned

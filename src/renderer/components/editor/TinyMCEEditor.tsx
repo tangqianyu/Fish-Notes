@@ -23,6 +23,10 @@ const THEME_CONTENT_STYLES: Record<string, string> = {
     body { background: #fdf6e3; color: #073642; }
     .hashtag { background-color: rgba(38, 139, 210, 0.12); color: #268bd2; padding: 0.1em 0.4em; border-radius: 0.375rem; font-weight: 500; font-size: 0.9em; }
   `,
+	anime: `
+    body { background: #fef5f8; color: #2d1b30; }
+    .hashtag { background-color: rgba(232, 67, 147, 0.1); color: #e84393; padding: 0.1em 0.4em; border-radius: 0.375rem; font-weight: 500; font-size: 0.9em; }
+  `,
 };
 
 const CODESAMPLE_LANGUAGES = [

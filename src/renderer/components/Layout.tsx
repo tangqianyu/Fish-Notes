@@ -103,6 +103,7 @@ function Layout() {
         noteId={selectedNote?.id ?? null}
         title={selectedNote?.title ?? ''}
         content={selectedNote?.content ?? ''}
+        isLocked={selectedNote?.isLocked ?? false}
         onContentChange={updateNoteContent}
       />
       {showSearch && <SearchBar onClose={closeSearch} />}

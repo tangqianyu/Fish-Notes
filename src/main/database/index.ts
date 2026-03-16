@@ -6,6 +6,7 @@ import { marked } from 'marked';
 import * as schema from './schema';
 
 let db: ReturnType<typeof drizzle<typeof schema>>;
+let rawDb: Database.Database;
 
 export function initDatabase() {
   const dbPath = path.join(app.getPath('userData'), 'fish-notes.db');
@@ -37,6 +38,11 @@ export function initDatabase() {
       note_id TEXT NOT NULL REFERENCES notes(id) ON DELETE CASCADE,
       tag_id TEXT NOT NULL REFERENCES tags(id) ON DELETE CASCADE,
       PRIMARY KEY (note_id, tag_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS app_settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL
     );
 
     -- FTS5 for full-text search
@@ -99,6 +105,12 @@ export function initDatabase() {
     sqlite.exec("INSERT INTO notes_fts(notes_fts) VALUES('rebuild')");
   }
 
+  // Migration: add is_locked column to notes if missing
+  const noteColsFinal = sqlite.pragma('table_info(notes)') as { name: string }[];
+  if (!noteColsFinal.some((c) => c.name === 'is_locked')) {
+    sqlite.exec('ALTER TABLE notes ADD COLUMN is_locked INTEGER NOT NULL DEFAULT 0');
+  }
+
   // Update FTS triggers to use content_text for search indexing
   sqlite.exec(`
     DROP TRIGGER IF EXISTS notes_ai;
@@ -119,6 +131,7 @@ export function initDatabase() {
     END;
   `);
 
+  rawDb = sqlite;
   db = drizzle(sqlite, { schema });
   return db;
 }
@@ -128,6 +141,13 @@ export function getDatabase() {
     throw new Error('Database not initialized. Call initDatabase() first.');
   }
   return db;
+}
+
+export function getRawDatabase(): Database.Database {
+  if (!rawDb) {
+    throw new Error('Database not initialized. Call initDatabase() first.');
+  }
+  return rawDb;
 }
 
 function convertMarkdownToHtml(markdown: string): string {

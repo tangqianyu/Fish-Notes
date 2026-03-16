@@ -6,6 +6,7 @@ interface NoteData {
   updatedAt: string;
   isTrashed: boolean;
   isPinned: boolean;
+  isLocked: boolean;
 }
 
 interface TagData {
@@ -28,6 +29,18 @@ interface Window {
       restore: (id: string) => Promise<void>;
       deletePermanently: (id: string) => Promise<void>;
       togglePin: (id: string) => Promise<boolean>;
+      lock: (id: string) => Promise<boolean>;
+      unlock: (id: string) => Promise<boolean>;
+      getDecrypted: (id: string) => Promise<NoteData | undefined>;
+    };
+    encryption: {
+      hasPassword: () => Promise<boolean>;
+      verifyPassword: (password: string) => Promise<boolean>;
+      setPassword: (password: string) => Promise<boolean>;
+      changePassword: (oldPassword: string, newPassword: string) => Promise<boolean>;
+      removePassword: (password: string) => Promise<boolean>;
+      isUnlocked: () => Promise<boolean>;
+      lockAll: () => Promise<boolean>;
     };
     tags: {
       getAll: () => Promise<TagData[]>;

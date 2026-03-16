@@ -12,6 +12,19 @@ contextBridge.exposeInMainWorld('api', {
     restore: (id: string) => ipcRenderer.invoke('notes:restore', id),
     deletePermanently: (id: string) => ipcRenderer.invoke('notes:deletePermanently', id),
     togglePin: (id: string) => ipcRenderer.invoke('notes:togglePin', id),
+    lock: (id: string) => ipcRenderer.invoke('notes:lock', id),
+    unlock: (id: string) => ipcRenderer.invoke('notes:unlock', id),
+    getDecrypted: (id: string) => ipcRenderer.invoke('notes:getDecrypted', id),
+  },
+  encryption: {
+    hasPassword: () => ipcRenderer.invoke('encryption:hasPassword'),
+    verifyPassword: (password: string) => ipcRenderer.invoke('encryption:verifyPassword', password),
+    setPassword: (password: string) => ipcRenderer.invoke('encryption:setPassword', password),
+    changePassword: (oldPassword: string, newPassword: string) =>
+      ipcRenderer.invoke('encryption:changePassword', oldPassword, newPassword),
+    removePassword: (password: string) => ipcRenderer.invoke('encryption:removePassword', password),
+    isUnlocked: () => ipcRenderer.invoke('encryption:isUnlocked'),
+    lockAll: () => ipcRenderer.invoke('encryption:lockAll'),
   },
   tags: {
     getAll: () => ipcRenderer.invoke('tags:getAll'),

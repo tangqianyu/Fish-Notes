@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 
-type ThemeName = 'light' | 'dark' | 'solarized';
+type ThemeName = 'light' | 'dark' | 'solarized' | 'anime';
 
 interface ThemeContextValue {
   theme: ThemeName;
@@ -14,7 +14,7 @@ const STORAGE_KEY = 'fish-notes-theme';
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<ThemeName>(() => {
     const saved = localStorage.getItem(STORAGE_KEY) as ThemeName | null;
-    if (saved && ['light', 'dark', 'solarized'].includes(saved)) return saved;
+    if (saved && ['light', 'dark', 'solarized', 'anime'].includes(saved)) return saved;
     return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   });
 

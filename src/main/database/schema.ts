@@ -11,6 +11,7 @@ export const notes = sqliteTable('notes', {
   updatedAt: text('updated_at').notNull().default(sql`(datetime('now'))`),
   isTrashed: integer('is_trashed', { mode: 'boolean' }).notNull().default(false),
   isPinned: integer('is_pinned', { mode: 'boolean' }).notNull().default(false),
+  isLocked: integer('is_locked', { mode: 'boolean' }).notNull().default(false),
 });
 
 export const tags = sqliteTable('tags', {

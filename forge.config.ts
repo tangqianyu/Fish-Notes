@@ -3,6 +3,7 @@ import { MakerSquirrel } from '@electron-forge/maker-squirrel';
 import { MakerZIP } from '@electron-forge/maker-zip';
 import { MakerDeb } from '@electron-forge/maker-deb';
 import { MakerRpm } from '@electron-forge/maker-rpm';
+import { MakerDMG } from '@electron-forge/maker-dmg';
 import { VitePlugin } from '@electron-forge/plugin-vite';
 import { AutoUnpackNativesPlugin } from '@electron-forge/plugin-auto-unpack-natives';
 import { FusesPlugin } from '@electron-forge/plugin-fuses';
@@ -16,11 +17,16 @@ const config: ForgeConfig = {
       'node_modules/better-sqlite3',
       'node_modules/bindings',
       'node_modules/file-uri-to-path',
+      'node_modules/turndown',
+      'node_modules/@mixmark-io',
     ],
   },
   rebuildConfig: {},
   makers: [
     new MakerSquirrel({}),
+    new MakerDMG({
+      format: 'ULFO',
+    }),
     new MakerZIP({}, ['darwin']),
     new MakerRpm({}),
     new MakerDeb({}),

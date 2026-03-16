@@ -90,3 +90,34 @@
 
   --highlight-bg: #e8dba8;
 }
+
+/* Anime theme — sakura pink & lavender */
+[data-theme="anime"] {
+  --bg-primary: #fef5f8;
+  --bg-secondary: #f8e8ef;
+  --bg-tertiary: #f0dce6;
+  --bg-hover: #f0dce6;
+  --bg-active: #f5d0e0;
+
+  --text-primary: #2d1b30;
+  --text-secondary: #6b4c6e;
+  --text-tertiary: #a88aab;
+  --text-active: #e84393;
+
+  --border-primary: #f0d4e0;
+  --border-secondary: #f8e8ef;
+
+  --search-bg: rgba(240, 212, 224, 0.6);
+
+  --overlay-bg: rgba(45, 27, 48, 0.3);
+  --card-bg: #fef5f8;
+  --card-shadow: 0 25px 50px -12px rgba(232, 67, 147, 0.15);
+
+  --code-bg: #f3e4ed;
+  --pre-bg: #f8e8ef;
+
+  --tag-bg: rgba(232, 67, 147, 0.1);
+  --tag-text: #e84393;
+
+  --highlight-bg: #fcd5e8;
+}

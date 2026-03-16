@@ -1,4 +1,4 @@
-import { createContext, useContext, useReducer, useEffect, useCallback, type ReactNode } from 'react';
+import { createContext, useContext, useReducer, useEffect, useCallback, useState, type ReactNode } from 'react';
 import { extractTitle, stripHtml } from '../utils/htmlUtils';
 
 type ViewMode = 'all' | 'trash' | 'tag';
@@ -82,6 +82,13 @@ interface AppContextValue {
   renameTag: (tagId: string, oldName: string, newName: string) => Promise<void>;
   togglePinTag: (tagId: string) => Promise<void>;
   togglePinNote: (id: string) => Promise<void>;
+  encryptionReady: boolean;
+  sessionUnlocked: boolean;
+  lockNote: (id: string) => Promise<void>;
+  unlockNote: (id: string) => Promise<void>;
+  verifyPassword: (password: string) => Promise<boolean>;
+  lockAllNotes: () => Promise<void>;
+  refreshEncryptionState: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -94,6 +101,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
     viewMode: 'all',
     selectedTagId: null,
   });
+
+  const [encryptionReady, setEncryptionReady] = useState(false);
+  const [sessionUnlocked, setSessionUnlocked] = useState(false);
+
+  const refreshEncryptionState = useCallback(async () => {
+    const [hasPassword, isUnlocked] = await Promise.all([
+      window.api.encryption.hasPassword(),
+      window.api.encryption.isUnlocked(),
+    ]);
+    setEncryptionReady(hasPassword);
+    setSessionUnlocked(isUnlocked);
+  }, []);
 
   const refreshTags = useCallback(async () => {
     const tags = await window.api.tags.getAll();
@@ -121,7 +140,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     refreshNotes();
     refreshTags();
-  }, [refreshNotes, refreshTags]);
+    refreshEncryptionState();
+  }, [refreshNotes, refreshTags, refreshEncryptionState]);
 
   const createNote = useCallback(async () => {
     const note = await window.api.notes.create();
@@ -294,6 +314,42 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [refreshNotes],
   );
 
+  const lockNote = useCallback(
+    async (id: string) => {
+      await window.api.notes.lock(id);
+      dispatch({ type: 'UPDATE_NOTE', id, data: { isLocked: true, content: '' } });
+    },
+    [],
+  );
+
+  const unlockNote = useCallback(
+    async (id: string) => {
+      await window.api.notes.unlock(id);
+      const note = await window.api.notes.get(id);
+      if (note) {
+        dispatch({ type: 'UPDATE_NOTE', id, data: { isLocked: false, content: note.content } });
+      }
+    },
+    [],
+  );
+
+  const verifyPassword = useCallback(
+    async (password: string) => {
+      const ok = await window.api.encryption.verifyPassword(password);
+      if (ok) {
+        setSessionUnlocked(true);
+      }
+      return ok;
+    },
+    [],
+  );
+
+  const lockAllNotes = useCallback(async () => {
+    await window.api.encryption.lockAll();
+    setSessionUnlocked(false);
+    await refreshNotes();
+  }, [refreshNotes]);
+
   return (
     <AppContext.Provider
       value={{
@@ -314,6 +370,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
         renameTag,
         togglePinTag,
         togglePinNote,
+        encryptionReady,
+        sessionUnlocked,
+        lockNote,
+        unlockNote,
+        verifyPassword,
+        lockAllNotes,
+        refreshEncryptionState,
       }}
     >
       {children}

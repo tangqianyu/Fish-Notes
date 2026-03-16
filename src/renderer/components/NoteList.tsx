@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useApp } from '../contexts/AppContext';
+import PasswordPrompt from './PasswordPrompt';
 
 interface NoteListProps {
   width: number;
@@ -13,10 +14,12 @@ interface NoteContextMenu {
 }
 
 function NoteList({ width, onResizeStart }: NoteListProps) {
-  const { state, createNote, selectNote, trashNote, restoreNote, deleteNotePermanently, togglePinNote } = useApp();
+  const { state, createNote, selectNote, trashNote, restoreNote, deleteNotePermanently, togglePinNote, lockNote, unlockNote, encryptionReady, sessionUnlocked, verifyPassword } = useApp();
   const { notes, selectedNoteId, viewMode } = state;
 
   const [contextMenu, setContextMenu] = useState<NoteContextMenu | null>(null);
+  const [showPasswordPrompt, setShowPasswordPrompt] = useState(false);
+  const pendingActionRef = useRef<(() => Promise<void>) | null>(null);
 
   const headerLabel = viewMode === 'trash' ? '回收站' : '所有笔记';
 
@@ -60,6 +63,47 @@ function NoteList({ width, onResizeStart }: NoteListProps) {
     setContextMenu(null);
     await togglePinNote(noteId);
   }, [contextMenu, togglePinNote]);
+
+  const handleLock = useCallback(async () => {
+    if (!contextMenu) return;
+    const { noteId } = contextMenu;
+    setContextMenu(null);
+    if (!sessionUnlocked) {
+      pendingActionRef.current = () => lockNote(noteId);
+      setShowPasswordPrompt(true);
+      return;
+    }
+    await lockNote(noteId);
+  }, [contextMenu, lockNote, sessionUnlocked]);
+
+  const handleUnlock = useCallback(async () => {
+    if (!contextMenu) return;
+    const { noteId } = contextMenu;
+    setContextMenu(null);
+    if (!sessionUnlocked) {
+      pendingActionRef.current = () => unlockNote(noteId);
+      setShowPasswordPrompt(true);
+      return;
+    }
+    await unlockNote(noteId);
+  }, [contextMenu, unlockNote, sessionUnlocked]);
+
+  const handlePasswordVerify = useCallback(async (password: string) => {
+    const ok = await verifyPassword(password);
+    if (ok) {
+      setShowPasswordPrompt(false);
+      if (pendingActionRef.current) {
+        await pendingActionRef.current();
+        pendingActionRef.current = null;
+      }
+    }
+    return ok;
+  }, [verifyPassword]);
+
+  const handlePasswordCancel = useCallback(() => {
+    setShowPasswordPrompt(false);
+    pendingActionRef.current = null;
+  }, []);
 
   const contextNote = contextMenu ? notes.find((n) => n.id === contextMenu.noteId) : null;
 
@@ -124,10 +168,33 @@ function NoteList({ width, onResizeStart }: NoteListProps) {
         ) : (
           <NoteContextMenuPopup x={contextMenu.x} y={contextMenu.y}>
             <ContextMenuItem label={contextNote?.isPinned ? '取消置顶' : '置顶'} onClick={handleTogglePin} />
+            {encryptionReady && (
+              <>
+                <div className="my-1 border-t" style={{ borderColor: 'var(--border-secondary)' }} />
+                {contextNote?.isLocked ? (
+                  <ContextMenuItem label="移除加密" onClick={handleUnlock} />
+                ) : (
+                  <ContextMenuItem label="加密笔记" onClick={handleLock} />
+                )}
+              </>
+            )}
             <div className="my-1 border-t" style={{ borderColor: 'var(--border-secondary)' }} />
             <ContextMenuItem label="删除" onClick={handleTrash} danger />
           </NoteContextMenuPopup>
         )
+      )}
+
+      {/* Password prompt modal */}
+      {showPasswordPrompt && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center" style={{ backgroundColor: 'var(--overlay-bg)' }}>
+          <div
+            className="w-80 rounded-xl shadow-2xl p-6"
+            style={{ backgroundColor: 'var(--card-bg)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <PasswordPrompt onVerify={handlePasswordVerify} onCancel={handlePasswordCancel} message="请输入密码以继续操作" buttonText="确认" />
+          </div>
+        </div>
       )}
     </div>
   );
@@ -183,9 +250,18 @@ function NoteListItem({ note, isSelected, onClick, onContextMenu }: {
     >
       <div className="flex items-center text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>
         {note.isPinned && <span className="mr-1 text-xs opacity-60">📌</span>}
+        {note.isLocked && (
+          <svg className="w-3.5 h-3.5 mr-1 shrink-0 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          </svg>
+        )}
         {title}
       </div>
-      {preview && <div className="mt-1 text-xs truncate" style={{ color: 'var(--text-tertiary)' }}>{preview}</div>}
+      {note.isLocked ? (
+        <div className="mt-1 text-xs truncate" style={{ color: 'var(--text-tertiary)' }}>加密笔记</div>
+      ) : (
+        preview && <div className="mt-1 text-xs truncate" style={{ color: 'var(--text-tertiary)' }}>{preview}</div>
+      )}
       <div className="mt-1 text-xs" style={{ color: 'var(--text-tertiary)' }}>{date}</div>
     </button>
   );

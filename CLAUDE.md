@@ -30,13 +30,14 @@ src/
 │   ├── database/
 │   │   ├── index.ts                     # DB 初始化，WAL 模式，FTS5，迁移（含 md→html 迁移）
 │   │   ├── schema.ts                    # Drizzle schema: notes, tags, noteTags
-│   │   ├── notes.ts                     # 笔记 CRUD
+│   │   ├── notes.ts                     # 笔记 CRUD + 加密/解密操作
 │   │   ├── tags.ts                      # 标签管理（增删改查、置顶、重命名）
 │   │   └── search.ts                    # FTS5 搜索（索引 content_text 纯文本）
 │   ├── ipc/
-│   │   ├── handlers.ts                  # 主 IPC handler 注册
+│   │   ├── handlers.ts                  # 主 IPC handler 注册（含加密相关）
 │   │   └── exportHandlers.ts            # 导出（Markdown/HTML/PDF）
 │   ├── export/                          # 导出实现（HTML→Markdown 用 turndown）
+│   ├── encryption.ts                    # AES-256-GCM 加密 + scrypt 密码哈希
 │   └── images.ts                        # 图片存储管理（fish-image:// 协议，UUID 命名）
 ├── renderer/
 │   ├── main.tsx                         # React DOM 入口
@@ -45,23 +46,24 @@ src/
 │   ├── components/
 │   │   ├── Layout.tsx                   # 三栏布局（侧边栏/笔记列表/编辑器），可拖拽调整
 │   │   ├── Sidebar.tsx                  # 标签树 + 导航 + 右键菜单（置顶/重命名/删除）
-│   │   ├── NoteList.tsx                 # 当前视图的笔记列表
-│   │   ├── Editor.tsx                   # 编辑器容器，useAutoSave + 导出菜单
+│   │   ├── NoteList.tsx                 # 当前视图的笔记列表 + 加密右键菜单
+│   │   ├── Editor.tsx                   # 编辑器容器，useAutoSave + 导出菜单 + 加密锁定
 │   │   ├── TagBar.tsx                   # 标签管理栏（当前笔记标签 + 添加/移除）
 │   │   ├── TitleBar.tsx                 # macOS 拖拽区域
 │   │   ├── editor/
 │   │   │   ├── TinyMCEEditor.tsx        # TinyMCE 编辑器（接口: defaultValue + onChange）
 │   │   │   └── hashtagDetector.ts       # 实时 #tag 检测 + 药丸样式包裹
 │   │   ├── SearchBar.tsx                # 全文搜索弹窗
-│   │   └── Settings.tsx                 # 主题设置（light/dark/solarized）
+│   │   ├── PasswordPrompt.tsx           # 密码输入弹窗（加密功能）
+│   │   └── Settings.tsx                 # 主题设置（light/dark/solarized/anime）+ 密码管理
 │   ├── contexts/
-│   │   ├── AppContext.tsx               # 全局状态：笔记、标签、视图模式、标签管理 actions
+│   │   ├── AppContext.tsx               # 全局状态：笔记、标签、视图模式、标签管理 actions、加密状态
 │   │   └── ThemeContext.tsx             # 主题状态
 │   ├── hooks/useAutoSave.ts            # 500ms 防抖保存
 │   ├── utils/
-│   │   ├── tagParser.ts                # 从 HTML 解析 #tags + 构建标签树
+│   │   ├── tagParser.ts                # 构建标签树（parseTags 已废弃，标签改为直接添加）
 │   │   └── htmlUtils.ts                # extractTitle, stripHtml 工具函数
-│   ├── styles/themes/variables.css     # CSS 变量（三个主题 + 标签颜色）
+│   ├── styles/themes/variables.css     # CSS 变量（四个主题 + 标签颜色）
 │   └── types/global.d.ts              # window.api 类型定义
 scripts/
 └── copy-tinymce.js                     # postinstall: 复制 TinyMCE 资源到 public/
@@ -72,16 +74,32 @@ public/
 ## 核心数据流
 
 ### 编辑保存
-用户输入 → TinyMCE onEditorChange → HTML 字符串 → Editor.tsx handleChange → useAutoSave(500ms) → AppContext.updateNoteContent → extractTitle + stripHtml + parseTags() + IPC 保存 + 同步标签 + cleanupUnused
+用户输入 → TinyMCE onEditorChange → HTML 字符串 → Editor.tsx handleChange → useAutoSave(500ms) → AppContext.updateNoteContent → extractTitle + stripHtml + IPC 保存
 
 ### 标签系统
-- 编辑器中输入 `#tagname`，hashtagDetector 自动包裹为 `<span class="hashtag">` （蓝色药丸样式）
-- 支持嵌套标签: `#parent/child`
-- 标签从笔记 HTML 内容中自动解析（parseTags）
-- TagBar 组件提供标签添加/移除的快捷操作
-- 侧边栏右键菜单支持：置顶、重命名、删除
-- 删除标签时自动从所有笔记内容中移除 `#tag` 文本和 hashtag span
-- 重命名标签时自动更新所有笔记内容
+- **检测**: 编辑器中输入 `#tagname`，hashtagDetector（300ms 防抖）自动包裹为 `<span class="hashtag">`（蓝色药丸样式），光标所在文本节点不处理以避免跳动
+- **标签管理**: 标签不再从内容中自动解析，而是通过 TagBar 直接添加/移除（parseTags 已废弃）
+- **嵌套标签**: `#parent/child/grandchild`，`/` 分隔，数据库存储完整路径，侧边栏动态构建树形结构
+- **TagBar**: 显示当前笔记标签（蓝色药丸 + × 移除），`+` 按钮弹出搜索框添加已有标签或创建新标签
+- **侧边栏**: 树形展示所有标签，显示笔记数量（排除已删除），缩进表示层级
+- **右键菜单**: 置顶/取消置顶、重命名（内联编辑，仅编辑叶子名称）、删除标签
+- **置顶**: 置顶标签排在最前，显示 📌 图标，状态持久化到数据库
+- **删除**: 自动从所有笔记内容中移除 `#tag` 文本和 hashtag span，清理无关联标签
+- **重命名**: 自动更新所有笔记中的 span 包裹和裸文本引用
+- **自动标签**: 在标签视图下新建笔记时自动添加该标签
+- **清理**: 标签操作后调用 `cleanupUnused()` 移除无笔记关联的孤立标签
+
+### 笔记加密系统
+- 使用 AES-256-GCM 对笔记内容进行端到端加密，密码通过 scrypt 哈希
+- 用户在 Settings 中设置密码，密码哈希和盐值存储在 `app_settings` 表
+- 加密流程: 用户设置密码 → scrypt 派生加密密钥 → AES-256-GCM 加密笔记内容（IV + authTag + 密文 → base64）
+- 会话管理: 验证密码后密钥缓存在内存中，锁定会话时清除
+- 加密笔记的 `content_text` 被清空（从 FTS 索引中移除，不可搜索）
+- 修改密码时自动用新密钥重新加密所有已加密笔记
+- 移除密码时自动解密所有笔记
+- Editor 打开加密笔记时先弹出 PasswordPrompt，验证后获取解密内容
+- NoteList 右键菜单支持"加密笔记"/"移除加密"操作
+- IPC: `window.api.encryption.*`（密码管理）+ `window.api.notes.lock/unlock/getDecrypted`
 
 ### 图片系统
 - 支持拖拽、粘贴、文件选择器三种方式插入图片
@@ -97,10 +115,11 @@ renderer 通过 `window.api.*` 调用 → preload.ts → ipcRenderer.invoke → 
 
 SQLite 文件位置: `~/Library/Application Support/Fish Notes/`(macOS)
 
-**三张表**:
-- `notes`: id, title, content (HTML), content_text (纯文本, FTS用), content_format, created_at, updated_at, is_trashed, is_pinned
+**四张表**:
+- `notes`: id, title, content (HTML), content_text (纯文本, FTS用), content_format, created_at, updated_at, is_trashed, is_pinned, is_locked
 - `tags`: id, name (unique), parent_id, is_pinned
 - `note_tags`: note_id, tag_id（多对多关联）
+- `app_settings`: key, value（存储加密密码哈希、盐值等配置）
 
 **迁移**: 在 `database/index.ts` 中用 `pragma('table_info')` 检查并 ALTER TABLE
 **FTS5**: 触发器索引 title + content_text（纯文本，不含 HTML 标签）

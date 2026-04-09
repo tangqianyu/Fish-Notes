@@ -6,7 +6,18 @@ let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
 export function scheduleHashtagDetection(editor: Editor): void {
   if (debounceTimer) clearTimeout(debounceTimer);
-  debounceTimer = setTimeout(() => detectAndStyleHashtags(editor), 300);
+  debounceTimer = setTimeout(() => {
+    // Guard: editor may have been destroyed before the timer fires
+    if (editor.destroyed || editor.removed) return;
+    detectAndStyleHashtags(editor);
+  }, 300);
+}
+
+export function cancelHashtagDetection(): void {
+  if (debounceTimer) {
+    clearTimeout(debounceTimer);
+    debounceTimer = null;
+  }
 }
 
 function detectAndStyleHashtags(editor: Editor): void {

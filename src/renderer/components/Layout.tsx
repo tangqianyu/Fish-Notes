@@ -52,8 +52,18 @@ function Layout() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [createNote]);
 
+  // Track active drag listeners so they can be cleaned up on unmount
+  const dragCleanupRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    return () => {
+      dragCleanupRef.current?.();
+    };
+  }, []);
+
   const handleSidebarMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
+    dragCleanupRef.current?.();
     sidebarWidthRef.current = sidebarWidth;
     const startX = e.clientX;
 
@@ -62,17 +72,20 @@ function Layout() {
       setSidebarWidth(newWidth);
     };
 
-    const onMouseUp = () => {
+    const cleanup = () => {
       document.removeEventListener('mousemove', onMouseMove);
-      document.removeEventListener('mouseup', onMouseUp);
+      document.removeEventListener('mouseup', cleanup);
+      dragCleanupRef.current = null;
     };
 
     document.addEventListener('mousemove', onMouseMove);
-    document.addEventListener('mouseup', onMouseUp);
+    document.addEventListener('mouseup', cleanup);
+    dragCleanupRef.current = cleanup;
   };
 
   const handleNoteListMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
+    dragCleanupRef.current?.();
     noteListWidthRef.current = noteListWidth;
     const startX = e.clientX;
 
@@ -81,13 +94,15 @@ function Layout() {
       setNoteListWidth(newWidth);
     };
 
-    const onMouseUp = () => {
+    const cleanup = () => {
       document.removeEventListener('mousemove', onMouseMove);
-      document.removeEventListener('mouseup', onMouseUp);
+      document.removeEventListener('mouseup', cleanup);
+      dragCleanupRef.current = null;
     };
 
     document.addEventListener('mousemove', onMouseMove);
-    document.addEventListener('mouseup', onMouseUp);
+    document.addEventListener('mouseup', cleanup);
+    dragCleanupRef.current = cleanup;
   };
 
   return (

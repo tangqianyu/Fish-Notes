@@ -14,6 +14,9 @@ function SearchBar({ onClose }: SearchBarProps) {
 
   useEffect(() => {
     inputRef.current?.focus();
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
   }, []);
 
   const handleSearch = useCallback((value: string) => {

@@ -1,8 +1,8 @@
-import { useRef, useCallback, useMemo } from "react";
+import { useRef, useCallback, useMemo, useEffect } from "react";
 import { Editor } from "@tinymce/tinymce-react";
 import type { Editor as TinyMCEEditorInstance } from "tinymce";
 import { useTheme } from "../../contexts/ThemeContext";
-import { scheduleHashtagDetection } from "./hashtagDetector";
+import { scheduleHashtagDetection, cancelHashtagDetection } from "./hashtagDetector";
 
 interface TinyMCEEditorProps {
 	defaultValue: string;
@@ -73,6 +73,13 @@ function TinyMCEEditor({ defaultValue, onChange }: TinyMCEEditorProps) {
 	const handleInit = useCallback((_evt: unknown, editor: TinyMCEEditorInstance) => {
 		editorRef.current = editor;
 		scheduleHashtagDetection(editor);
+	}, []);
+
+	// Cancel any pending hashtag detection when the editor unmounts
+	useEffect(() => {
+		return () => {
+			cancelHashtagDetection();
+		};
 	}, []);
 
 	const skinUrl = theme === "dark" ? "./tinymce/skins/ui/oxide-dark" : "./tinymce/skins/ui/oxide";

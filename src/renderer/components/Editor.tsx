@@ -30,9 +30,12 @@ function Editor({ noteId, title, content, isLocked, onContentChange }: EditorPro
   // Keep initialContent stable per note to prevent @tinymce/tinymce-react from calling
   // setContent() when selectedNote.content updates in state (which resets the cursor).
   const initialContentRef = useRef(content);
+  // Track the last known content to skip no-op saves (e.g. TinyMCE init events)
+  const lastContentRef = useRef(content);
   const prevNoteIdRef = useRef(noteId);
   if (noteId !== prevNoteIdRef.current) {
     initialContentRef.current = content;
+    lastContentRef.current = content;
     prevNoteIdRef.current = noteId;
     setLocalTitle(title);
     setDecryptedContent(null);
@@ -44,14 +47,18 @@ function Editor({ noteId, title, content, isLocked, onContentChange }: EditorPro
       setDecryptedContent(null);
       return;
     }
+    let cancelled = false;
     setLoadingDecrypted(true);
     window.api.notes.getDecrypted(noteId).then((note) => {
+      if (cancelled) return;
       if (note) {
         setDecryptedContent(note.content);
         initialContentRef.current = note.content;
+        lastContentRef.current = note.content;
       }
       setLoadingDecrypted(false);
     });
+    return () => { cancelled = true; };
   }, [noteId, isLocked, sessionUnlocked]);
 
   // Sync title from external changes (e.g. note list selection)
@@ -74,6 +81,8 @@ function Editor({ noteId, title, content, isLocked, onContentChange }: EditorPro
   const handleChange = useCallback(
     (html: string) => {
       if (!noteId) return;
+      if (html === lastContentRef.current) return;
+      lastContentRef.current = html;
       save(() => {
         onContentChange?.(noteId, html);
       });

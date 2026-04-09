@@ -42,7 +42,7 @@ function Sidebar({ width, onResizeStart, onSearchClick, onSettingsClick }: Sideb
     if (!contextMenu) return;
     const { node } = contextMenu;
     setContextMenu(null);
-    await deleteTag(node.id, node.fullName);
+    await deleteTag(node.id);
   }, [contextMenu, deleteTag]);
 
   const handleTogglePin = useCallback(async () => {
@@ -67,7 +67,7 @@ function Sidebar({ width, onResizeStart, onSearchClick, onSettingsClick }: Sideb
         const parts = node.fullName.split('/');
         parts[parts.length - 1] = trimmed;
         const newFullName = parts.join('/');
-        await renameTag(node.id, node.fullName, newFullName);
+        await renameTag(node.id, newFullName);
       }
       setEditingTagId(null);
       setEditingName('');

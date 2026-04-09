@@ -1,8 +1,8 @@
-import { useRef, useCallback, useMemo, useEffect } from "react";
+import { useRef, useCallback, useMemo } from "react";
 import { Editor } from "@tinymce/tinymce-react";
 import type { Editor as TinyMCEEditorInstance } from "tinymce";
 import { useTheme } from "../../contexts/ThemeContext";
-import { scheduleHashtagDetection, cancelHashtagDetection } from "./hashtagDetector";
+
 
 interface TinyMCEEditorProps {
 	defaultValue: string;
@@ -11,22 +11,10 @@ interface TinyMCEEditorProps {
 
 // Theme-specific content styles injected into the editor iframe
 const THEME_CONTENT_STYLES: Record<string, string> = {
-	light: `
-    body { background: #ffffff; color: #111827; }
-    .hashtag { background-color: rgba(59, 130, 246, 0.1); color: #3b82f6; padding: 0.1em 0.4em; border-radius: 0.375rem; font-weight: 500; font-size: 0.9em; }
-  `,
-	dark: `
-    body { background: #1a1a2e; color: #e2e8f0; }
-    .hashtag { background-color: rgba(96, 165, 250, 0.15); color: #60a5fa; padding: 0.1em 0.4em; border-radius: 0.375rem; font-weight: 500; font-size: 0.9em; }
-  `,
-	solarized: `
-    body { background: #fdf6e3; color: #073642; }
-    .hashtag { background-color: rgba(38, 139, 210, 0.12); color: #268bd2; padding: 0.1em 0.4em; border-radius: 0.375rem; font-weight: 500; font-size: 0.9em; }
-  `,
-	anime: `
-    body { background: #fef5f8; color: #2d1b30; }
-    .hashtag { background-color: rgba(232, 67, 147, 0.1); color: #e84393; padding: 0.1em 0.4em; border-radius: 0.375rem; font-weight: 500; font-size: 0.9em; }
-  `,
+	light: `body { background: #ffffff; color: #111827; }`,
+	dark: `body { background: #1a1a2e; color: #e2e8f0; }`,
+	solarized: `body { background: #fdf6e3; color: #073642; }`,
+	anime: `body { background: #fef5f8; color: #2d1b30; }`,
 };
 
 const CODESAMPLE_LANGUAGES = [
@@ -72,15 +60,8 @@ function TinyMCEEditor({ defaultValue, onChange }: TinyMCEEditorProps) {
 
 	const handleInit = useCallback((_evt: unknown, editor: TinyMCEEditorInstance) => {
 		editorRef.current = editor;
-		scheduleHashtagDetection(editor);
 	}, []);
 
-	// Cancel any pending hashtag detection when the editor unmounts
-	useEffect(() => {
-		return () => {
-			cancelHashtagDetection();
-		};
-	}, []);
 
 	const skinUrl = theme === "dark" ? "./tinymce/skins/ui/oxide-dark" : "./tinymce/skins/ui/oxide";
 
@@ -112,13 +93,11 @@ function TinyMCEEditor({ defaultValue, onChange }: TinyMCEEditorProps) {
 				// internal 'change' event (undo stack updates, blur), not on every keystroke.
 				editor.on("input", () => {
 					onChangeRef.current?.(editor.getContent());
-					scheduleHashtagDetection(editor);
 				});
 
 				// Also catch formatting commands (bold, italic, etc.) and undo/redo
 				editor.on("ExecCommand Undo Redo", () => {
 					onChangeRef.current?.(editor.getContent());
-					scheduleHashtagDetection(editor);
 				});
 
 				// Ctrl+S: immediate save (bypasses the 500ms debounce)

@@ -6,7 +6,7 @@ Bear 风格的笔记应用，使用 React + Electron + TypeScript 构建。
 
 - **桌面**: Electron 40 + Electron Forge + Vite 5
 - **前端**: React 18 + TypeScript 5.7 + Tailwind CSS 3
-- **编辑器**: TinyMCE 6.8（开源自托管，中文语言包，自定义 #tag 检测）
+- **编辑器**: TinyMCE 6.8（开源自托管，中文语言包）
 - **数据库**: SQLite (better-sqlite3) + Drizzle ORM + FTS5 全文搜索
 - **架构**: Main/Renderer 进程分离，通过 IPC 通信
 
@@ -51,8 +51,7 @@ src/
 │   │   ├── TagBar.tsx                   # 标签管理栏（当前笔记标签 + 添加/移除）
 │   │   ├── TitleBar.tsx                 # macOS 拖拽区域
 │   │   ├── editor/
-│   │   │   ├── TinyMCEEditor.tsx        # TinyMCE 编辑器（接口: defaultValue + onChange）
-│   │   │   └── hashtagDetector.ts       # 实时 #tag 检测 + 药丸样式包裹
+│   │   │   └── TinyMCEEditor.tsx        # TinyMCE 编辑器（接口: defaultValue + onChange）
 │   │   ├── SearchBar.tsx                # 全文搜索弹窗
 │   │   ├── PasswordPrompt.tsx           # 密码输入弹窗（加密功能）
 │   │   └── Settings.tsx                 # 主题设置（light/dark/solarized/anime）+ 密码管理
@@ -77,17 +76,16 @@ public/
 用户输入 → TinyMCE onEditorChange → HTML 字符串 → Editor.tsx handleChange → useAutoSave(500ms) → AppContext.updateNoteContent → extractTitle + stripHtml + IPC 保存
 
 ### 标签系统
-- **检测**: 编辑器中输入 `#tagname`，hashtagDetector（300ms 防抖）自动包裹为 `<span class="hashtag">`（蓝色药丸样式），光标所在文本节点不处理以避免跳动
-- **标签管理**: 标签不再从内容中自动解析，而是通过 TagBar 直接添加/移除（parseTags 已废弃）
-- **嵌套标签**: `#parent/child/grandchild`，`/` 分隔，数据库存储完整路径，侧边栏动态构建树形结构
-- **TagBar**: 显示当前笔记标签（蓝色药丸 + × 移除），`+` 按钮弹出搜索框添加已有标签或创建新标签
-- **侧边栏**: 树形展示所有标签，显示笔记数量（排除已删除），缩进表示层级
-- **右键菜单**: 置顶/取消置顶、重命名（内联编辑，仅编辑叶子名称）、删除标签
-- **置顶**: 置顶标签排在最前，显示 📌 图标，状态持久化到数据库
-- **删除**: 自动从所有笔记内容中移除 `#tag` 文本和 hashtag span，清理无关联标签
-- **重命名**: 自动更新所有笔记中的 span 包裹和裸文本引用
+- **标签管理**: 标签通过 TagBar 的 `+` 按钮直接添加/移除，不从编辑器内容中自动解析（parseTags 和 hashtagDetector 均已移除）
+- **嵌套标签**: `#parent/child/grandchild`，`/` 分隔，数据库存储完整路径，侧边栏通过 `buildTagTree()` 动态构建树形结构
+- **TagBar**: 显示当前笔记标签（蓝色药丸 + × 移除），`+` 按钮弹出搜索框（过滤已添加标签），可选择已有标签或输入新名称创建
+- **侧边栏**: 树形展示所有标签，显示笔记数量（排除已删除），缩进表示层级（每级 16px），点击切换到该标签视图
+- **右键菜单**: 置顶/取消置顶、重命名（内联编辑，仅编辑叶子名称，自动重建完整路径）、删除标签；菜单自动调整位置防溢出
+- **置顶**: 置顶标签排在最前，显示 📌 图标，状态通过 `tags.isPinned` 持久化到数据库
+- **删除**: 从 `note_tags` 移除关联 → 删除 `tags` 记录 → 遍历受影响笔记，用正则移除 `<span class="hashtag">#tag</span>` 和裸文本 `#tag` → 多余空格压缩 → 更新 title/content/contentText → 若当前正在查看该标签则切回 all 视图
+- **重命名**: 更新 `tags` 表 name → 遍历关联笔记，正则替换 span 包裹内和裸文本中的旧标签名为新名 → 更新 title/content/contentText
 - **自动标签**: 在标签视图下新建笔记时自动添加该标签
-- **清理**: 标签操作后调用 `cleanupUnused()` 移除无笔记关联的孤立标签
+- **清理**: 移除标签后调用 `cleanupUnused()` 删除 `note_tags` 中无关联的孤立标签
 
 ### 笔记加密系统
 - 使用 AES-256-GCM 对笔记内容进行端到端加密，密码通过 scrypt 哈希
@@ -131,7 +129,6 @@ SQLite 文件位置: `~/Library/Application Support/Fish Notes/`(macOS)
 - 接口: `{ defaultValue: string, onChange: (html: string) => void }`
 - 内容存储为 HTML 格式（非 Markdown）
 - 自托管: TinyMCE 资源在 `public/tinymce/`，通过 `tinymceScriptSrc` 加载
-- #tag 检测: `hashtagDetector.ts` 遍历 DOM 文本节点，包裹为 `<span class="hashtag">`
 - 主题适配: 根据 theme 切换 skin_url（oxide / oxide-dark）和 content_style
 - 图片处理: `images_upload_handler` + paste/drop 事件对接 `window.api.images`
 - 代码块: codesample 插件支持 25 种语言语法高亮

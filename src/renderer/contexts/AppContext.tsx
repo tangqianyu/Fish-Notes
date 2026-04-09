@@ -1,5 +1,5 @@
 import { createContext, useContext, useReducer, useEffect, useCallback, useState, type ReactNode } from 'react';
-import { extractTitle, stripHtml } from '../utils/htmlUtils';
+import { stripHtml } from '../utils/htmlUtils';
 
 type ViewMode = 'all' | 'trash' | 'tag';
 
@@ -78,8 +78,8 @@ interface AppContextValue {
   setViewMode: (mode: ViewMode, tagId?: string | null) => void;
   refreshNotes: () => Promise<void>;
   refreshTags: () => Promise<void>;
-  deleteTag: (tagId: string, tagName: string) => Promise<void>;
-  renameTag: (tagId: string, oldName: string, newName: string) => Promise<void>;
+  deleteTag: (tagId: string) => Promise<void>;
+  renameTag: (tagId: string, newName: string) => Promise<void>;
   togglePinTag: (tagId: string) => Promise<void>;
   togglePinNote: (id: string) => Promise<void>;
   encryptionReady: boolean;
@@ -240,30 +240,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const deleteTag = useCallback(
-    async (tagId: string, tagName: string) => {
-      // Get affected notes before deleting the tag
-      const affectedNoteIds = await window.api.tags.delete(tagId);
-      const escapedName = tagName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-      // Remove #tagName from each affected note's content (both span-wrapped and bare)
-      for (const noteId of affectedNoteIds) {
-        const note = await window.api.notes.get(noteId);
-        if (!note) continue;
-        const newContent = note.content
-          .replace(new RegExp(`<span class="hashtag">#${escapedName}</span>`, 'g'), '')
-          .replace(new RegExp(`#${escapedName}(?=[\\s,;.!?<]|$)`, 'g'), '')
-          .replace(/  +/g, ' ');
-        if (newContent !== note.content) {
-          const title = extractTitle(newContent);
-          const contentText = stripHtml(newContent);
-          await window.api.notes.update(noteId, { title, content: newContent, contentText });
-          dispatch({
-            type: 'UPDATE_NOTE',
-            id: noteId,
-            data: { title, content: newContent, updatedAt: new Date().toISOString() },
-          });
-        }
-      }
+    async (tagId: string) => {
+      await window.api.tags.delete(tagId);
 
       // If currently viewing this tag, switch to all notes
       if (state.selectedTagId === tagId) {
@@ -277,29 +255,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   );
 
   const renameTag = useCallback(
-    async (tagId: string, oldName: string, newName: string) => {
+    async (tagId: string, newName: string) => {
       await window.api.tags.rename(tagId, newName);
-      const escapedOld = oldName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-      // Update all notes that reference this tag (both span-wrapped and bare)
-      const noteIds = await window.api.tags.getNotesByTag(tagId);
-      for (const noteId of noteIds) {
-        const note = await window.api.notes.get(noteId);
-        if (!note) continue;
-        const newContent = note.content
-          .replace(new RegExp(`(<span class="hashtag">)#${escapedOld}(</span>)`, 'g'), `$1#${newName}$2`)
-          .replace(new RegExp(`#${escapedOld}(?=[\\s,;.!?<]|$)`, 'g'), `#${newName}`);
-        if (newContent !== note.content) {
-          const title = extractTitle(newContent);
-          const contentText = stripHtml(newContent);
-          await window.api.notes.update(noteId, { title, content: newContent, contentText });
-          dispatch({
-            type: 'UPDATE_NOTE',
-            id: noteId,
-            data: { title, content: newContent, updatedAt: new Date().toISOString() },
-          });
-        }
-      }
 
       await refreshTags();
     },

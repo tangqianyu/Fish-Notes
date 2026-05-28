@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../contexts/ThemeContext';
 import { useApp } from '../contexts/AppContext';
 
@@ -6,14 +7,13 @@ interface SettingsProps {
   onClose: () => void;
 }
 
-const themes = [
-  { id: 'light' as const, label: '浅色', preview: 'bg-white border-gray-200' },
-  { id: 'dark' as const, label: '深色', preview: 'bg-gray-900 border-gray-700' },
-  { id: 'solarized' as const, label: '日光', preview: 'bg-[#fdf6e3] border-[#e0d9c4]' },
-  { id: 'anime' as const, label: '动漫', preview: 'bg-[#fef5f8] border-[#f0d4e0]' },
+const languages = [
+  { id: 'zh-CN', label: '中文' },
+  { id: 'en', label: 'English' },
 ];
 
 function Settings({ onClose }: SettingsProps) {
+  const { t, i18n } = useTranslation();
   const { theme, setTheme } = useTheme();
   const { encryptionReady, sessionUnlocked, refreshEncryptionState, refreshNotes, lockAllNotes } = useApp();
 
@@ -24,6 +24,13 @@ function Settings({ onClose }: SettingsProps) {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const themes = [
+    { id: 'light' as const, label: t('Light'), preview: 'bg-white border-gray-200' },
+    { id: 'dark' as const, label: t('Dark'), preview: 'bg-gray-900 border-gray-700' },
+    { id: 'solarized' as const, label: t('Solarized'), preview: 'bg-[#fdf6e3] border-[#e0d9c4]' },
+    { id: 'anime' as const, label: t('Anime'), preview: 'bg-[#fef5f8] border-[#f0d4e0]' },
+  ];
+
   const resetForm = useCallback(() => {
     setPasswordView('none');
     setPassword('');
@@ -33,37 +40,37 @@ function Settings({ onClose }: SettingsProps) {
   }, []);
 
   const handleSetPassword = useCallback(async () => {
-    if (!password) { setError('请输入密码'); return; }
-    if (password !== confirmPassword) { setError('两次输入的密码不一致'); return; }
+    if (!password) { setError(t('Please enter a password')); return; }
+    if (password !== confirmPassword) { setError(t('Passwords do not match')); return; }
     setLoading(true);
     await window.api.encryption.setPassword(password);
     await refreshEncryptionState();
     resetForm();
     setLoading(false);
-  }, [password, confirmPassword, refreshEncryptionState, resetForm]);
+  }, [password, confirmPassword, refreshEncryptionState, resetForm, t]);
 
   const handleChangePassword = useCallback(async () => {
-    if (!oldPassword) { setError('请输入当前密码'); return; }
-    if (!password) { setError('请输入新密码'); return; }
-    if (password !== confirmPassword) { setError('两次输入的密码不一致'); return; }
+    if (!oldPassword) { setError(t('Please enter current password')); return; }
+    if (!password) { setError(t('Please enter new password')); return; }
+    if (password !== confirmPassword) { setError(t('Passwords do not match')); return; }
     setLoading(true);
     const ok = await window.api.encryption.changePassword(oldPassword, password);
     if (!ok) {
-      setError('当前密码错误');
+      setError(t('Current password is incorrect'));
       setLoading(false);
       return;
     }
     await refreshEncryptionState();
     resetForm();
     setLoading(false);
-  }, [oldPassword, password, confirmPassword, refreshEncryptionState, resetForm]);
+  }, [oldPassword, password, confirmPassword, refreshEncryptionState, resetForm, t]);
 
   const handleRemovePassword = useCallback(async () => {
-    if (!password) { setError('请输入密码'); return; }
+    if (!password) { setError(t('Please enter a password')); return; }
     setLoading(true);
     const ok = await window.api.encryption.removePassword(password);
     if (!ok) {
-      setError('密码错误');
+      setError(t('Incorrect password'));
       setLoading(false);
       return;
     }
@@ -71,7 +78,12 @@ function Settings({ onClose }: SettingsProps) {
     await refreshNotes();
     resetForm();
     setLoading(false);
-  }, [password, refreshEncryptionState, refreshNotes, resetForm]);
+  }, [password, refreshEncryptionState, refreshNotes, resetForm, t]);
+
+  const handleLanguageChange = useCallback((lng: string) => {
+    i18n.changeLanguage(lng);
+    localStorage.setItem('language', lng);
+  }, [i18n]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ backgroundColor: 'var(--overlay-bg)' }} onClick={onClose}>
@@ -82,7 +94,7 @@ function Settings({ onClose }: SettingsProps) {
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: 'var(--border-primary)' }}>
-          <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>设置</h2>
+          <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>{t('Settings')}</h2>
           <button
             onClick={onClose}
             className="p-1 rounded hover:opacity-70 transition-opacity"
@@ -96,19 +108,38 @@ function Settings({ onClose }: SettingsProps) {
 
         {/* Theme selection */}
         <div className="px-6 py-5">
-          <div className="text-sm font-medium mb-3" style={{ color: 'var(--text-secondary)' }}>主题</div>
+          <div className="text-sm font-medium mb-3" style={{ color: 'var(--text-secondary)' }}>{t('Theme')}</div>
           <div className="flex gap-3">
-            {themes.map((t) => (
+            {themes.map((th) => (
               <button
-                key={t.id}
-                onClick={() => setTheme(t.id)}
+                key={th.id}
+                onClick={() => setTheme(th.id)}
                 className={`flex-1 flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-all ${
-                  theme === t.id ? 'border-blue-500 ring-2 ring-blue-200' : 'border-transparent'
+                  theme === th.id ? 'border-blue-500 ring-2 ring-blue-200' : 'border-transparent'
                 }`}
                 style={{ backgroundColor: 'var(--bg-tertiary)' }}
               >
-                <div className={`w-full h-12 rounded-md border ${t.preview}`} />
-                <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>{t.label}</span>
+                <div className={`w-full h-12 rounded-md border ${th.preview}`} />
+                <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>{th.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Language selection */}
+        <div className="px-6 pb-5">
+          <div className="text-sm font-medium mb-3" style={{ color: 'var(--text-secondary)' }}>{t('Language')}</div>
+          <div className="flex gap-3">
+            {languages.map((lang) => (
+              <button
+                key={lang.id}
+                onClick={() => handleLanguageChange(lang.id)}
+                className={`flex-1 px-3 py-2 rounded-lg border-2 text-sm transition-all ${
+                  i18n.language === lang.id ? 'border-blue-500 ring-2 ring-blue-200' : 'border-transparent'
+                }`}
+                style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}
+              >
+                {lang.label}
               </button>
             ))}
           </div>
@@ -116,7 +147,7 @@ function Settings({ onClose }: SettingsProps) {
 
         {/* Encryption section */}
         <div className="px-6 pb-5">
-          <div className="text-sm font-medium mb-3" style={{ color: 'var(--text-secondary)' }}>笔记加密</div>
+          <div className="text-sm font-medium mb-3" style={{ color: 'var(--text-secondary)' }}>{t('Encryption')}</div>
 
           {passwordView === 'none' ? (
             <div className="flex flex-col gap-2">
@@ -126,12 +157,12 @@ function Settings({ onClose }: SettingsProps) {
                   className="px-3 py-2 rounded-lg text-sm text-white transition-colors"
                   style={{ backgroundColor: '#3b82f6' }}
                 >
-                  设置加密密码
+                  {t('Set Encryption Password')}
                 </button>
               ) : (
                 <>
                   <p className="text-xs mb-1" style={{ color: 'var(--text-tertiary)' }}>
-                    已设置加密密码。{sessionUnlocked ? '会话已解锁。' : '会话已锁定。'}
+                    {t('Encryption password is set.')}{sessionUnlocked ? t('Session unlocked.') : t('Session locked.')}
                   </p>
                   {sessionUnlocked && (
                     <button
@@ -139,7 +170,7 @@ function Settings({ onClose }: SettingsProps) {
                       className="px-3 py-2 rounded-lg text-sm transition-colors"
                       style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}
                     >
-                      锁定会话
+                      {t('Lock Session')}
                     </button>
                   )}
                   <button
@@ -147,14 +178,14 @@ function Settings({ onClose }: SettingsProps) {
                     className="px-3 py-2 rounded-lg text-sm transition-colors"
                     style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}
                   >
-                    修改密码
+                    {t('Change Password')}
                   </button>
                   <button
                     onClick={() => setPasswordView('remove')}
                     className="px-3 py-2 rounded-lg text-sm transition-colors"
                     style={{ color: '#ef4444', backgroundColor: 'var(--bg-tertiary)' }}
                   >
-                    移除密码
+                    {t('Remove Password')}
                   </button>
                 </>
               )}
@@ -167,7 +198,7 @@ function Settings({ onClose }: SettingsProps) {
                     type="password"
                     value={password}
                     onChange={(e) => { setPassword(e.target.value); setError(''); }}
-                    placeholder="设置密码"
+                    placeholder={t('Set password')}
                     autoFocus
                     className="px-3 py-2 rounded-lg border text-sm outline-none"
                     style={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
@@ -176,7 +207,7 @@ function Settings({ onClose }: SettingsProps) {
                     type="password"
                     value={confirmPassword}
                     onChange={(e) => { setConfirmPassword(e.target.value); setError(''); }}
-                    placeholder="确认密码"
+                    placeholder={t('Confirm password')}
                     className="px-3 py-2 rounded-lg border text-sm outline-none"
                     style={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
                   />
@@ -188,7 +219,7 @@ function Settings({ onClose }: SettingsProps) {
                     type="password"
                     value={oldPassword}
                     onChange={(e) => { setOldPassword(e.target.value); setError(''); }}
-                    placeholder="当前密码"
+                    placeholder={t('Current password')}
                     autoFocus
                     className="px-3 py-2 rounded-lg border text-sm outline-none"
                     style={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
@@ -197,7 +228,7 @@ function Settings({ onClose }: SettingsProps) {
                     type="password"
                     value={password}
                     onChange={(e) => { setPassword(e.target.value); setError(''); }}
-                    placeholder="新密码"
+                    placeholder={t('New password')}
                     className="px-3 py-2 rounded-lg border text-sm outline-none"
                     style={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
                   />
@@ -205,7 +236,7 @@ function Settings({ onClose }: SettingsProps) {
                     type="password"
                     value={confirmPassword}
                     onChange={(e) => { setConfirmPassword(e.target.value); setError(''); }}
-                    placeholder="确认新密码"
+                    placeholder={t('Confirm new password')}
                     className="px-3 py-2 rounded-lg border text-sm outline-none"
                     style={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
                   />
@@ -216,7 +247,7 @@ function Settings({ onClose }: SettingsProps) {
                   type="password"
                   value={password}
                   onChange={(e) => { setPassword(e.target.value); setError(''); }}
-                  placeholder="输入密码以确认移除"
+                  placeholder={t('Enter password to confirm removal')}
                   autoFocus
                   className="px-3 py-2 rounded-lg border text-sm outline-none"
                   style={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-primary)', color: 'var(--text-primary)' }}
@@ -231,7 +262,7 @@ function Settings({ onClose }: SettingsProps) {
                   className="flex-1 px-3 py-1.5 rounded-lg text-sm transition-colors"
                   style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}
                 >
-                  取消
+                  {t('Cancel')}
                 </button>
                 <button
                   onClick={
@@ -243,9 +274,9 @@ function Settings({ onClose }: SettingsProps) {
                   className="flex-1 px-3 py-1.5 rounded-lg text-sm text-white transition-colors disabled:opacity-50"
                   style={{ backgroundColor: passwordView === 'remove' ? '#ef4444' : '#3b82f6' }}
                 >
-                  {loading ? '处理中...' :
-                    passwordView === 'set' ? '设置' :
-                    passwordView === 'change' ? '修改' : '移除'}
+                  {loading ? t('Processing...') :
+                    passwordView === 'set' ? t('Set') :
+                    passwordView === 'change' ? t('Change') : t('Remove')}
                 </button>
               </div>
             </div>

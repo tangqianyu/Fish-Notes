@@ -1,4 +1,5 @@
 import { useMemo, useState, useRef, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useApp } from '../contexts/AppContext';
 import { buildTagTree, type TagTreeNode } from '../utils/tagParser';
 
@@ -16,6 +17,7 @@ interface ContextMenu {
 }
 
 function Sidebar({ width, onResizeStart, onSearchClick, onSettingsClick }: SidebarProps) {
+  const { t } = useTranslation();
   const { state, setViewMode, deleteTag, renameTag, togglePinTag } = useApp();
   const { viewMode, tags, selectedTagId } = state;
 
@@ -90,21 +92,21 @@ function Sidebar({ width, onResizeStart, onSearchClick, onSettingsClick }: Sideb
           <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
-          搜索
+          {t('Search')}
         </div>
       </div>
 
       {/* Nav items */}
       <nav className="flex-1 overflow-y-auto px-2 py-1">
-        <SidebarItem icon="📝" label="所有笔记" active={viewMode === 'all'} onClick={() => setViewMode('all')} />
-        <SidebarItem icon="🗑️" label="回收站" active={viewMode === 'trash'} onClick={() => setViewMode('trash')} />
+        <SidebarItem icon="📝" label={t('All Notes')} active={viewMode === 'all'} onClick={() => setViewMode('all')} />
+        <SidebarItem icon="🗑️" label={t('Trash')} active={viewMode === 'trash'} onClick={() => setViewMode('trash')} />
 
         {/* Tags */}
         <div className="mt-4 mb-1 px-2 text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--text-tertiary)' }}>
-          标签
+          {t('Tags')}
         </div>
         {tagTree.length === 0 ? (
-          <div className="px-2 py-4 text-sm text-center" style={{ color: 'var(--text-tertiary)' }}>暂无标签</div>
+          <div className="px-2 py-4 text-sm text-center" style={{ color: 'var(--text-tertiary)' }}>{t('No tags')}</div>
         ) : (
           <TagTreeList
             nodes={tagTree}
@@ -131,7 +133,7 @@ function Sidebar({ width, onResizeStart, onSearchClick, onSettingsClick }: Sideb
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
           </svg>
-          设置
+          {t('Settings')}
         </button>
       </div>
 
@@ -256,6 +258,7 @@ function TagContextMenu({ x, y, isPinned, onPin, onRename, onDelete }: {
   onRename: () => void;
   onDelete: () => void;
 }) {
+  const { t } = useTranslation();
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Adjust position if menu overflows viewport
@@ -282,10 +285,10 @@ function TagContextMenu({ x, y, isPinned, onPin, onRename, onDelete }: {
         boxShadow: 'var(--card-shadow)',
       }}
     >
-      <ContextMenuItem label={isPinned ? '取消置顶' : '置顶'} onClick={onPin} />
-      <ContextMenuItem label="重命名" onClick={onRename} />
+      <ContextMenuItem label={isPinned ? t('Unpin') : t('Pin')} onClick={onPin} />
+      <ContextMenuItem label={t('Rename')} onClick={onRename} />
       <div className="my-1 border-t" style={{ borderColor: 'var(--border-secondary)' }} />
-      <ContextMenuItem label="删除标签" onClick={onDelete} danger />
+      <ContextMenuItem label={t('Delete Tag')} onClick={onDelete} danger />
     </div>
   );
 }

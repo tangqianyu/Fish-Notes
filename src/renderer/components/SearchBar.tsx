@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useApp } from '../contexts/AppContext';
 
 interface SearchBarProps {
@@ -6,6 +7,7 @@ interface SearchBarProps {
 }
 
 function SearchBar({ onClose }: SearchBarProps) {
+  const { t } = useTranslation();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<NoteData[]>([]);
   const { selectNote, setViewMode } = useApp();
@@ -67,7 +69,7 @@ function SearchBar({ onClose }: SearchBarProps) {
             value={query}
             onChange={(e) => handleSearch(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="搜索笔记..."
+            placeholder={t('Search notes...')}
             className="flex-1 text-sm outline-none bg-transparent placeholder-gray-400"
           />
           {query && (
@@ -92,7 +94,7 @@ function SearchBar({ onClose }: SearchBarProps) {
                 className="w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-50 transition-colors"
               >
                 <div className="text-sm font-medium text-gray-900 truncate">
-                  {note.title || '无标题'}
+                  {note.title || t('Untitled')}
                 </div>
                 <div className="text-xs text-gray-400 mt-1 truncate">
                   {note.content.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').trim().slice(0, 100)}
@@ -104,7 +106,7 @@ function SearchBar({ onClose }: SearchBarProps) {
 
         {query && results.length === 0 && (
           <div className="px-4 py-8 text-center text-sm text-gray-400">
-            未找到匹配的笔记
+            {t('No matching notes found')}
           </div>
         )}
       </div>

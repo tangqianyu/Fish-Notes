@@ -1,6 +1,7 @@
 import { useRef, useCallback, useMemo } from "react";
 import { Editor } from "@tinymce/tinymce-react";
 import type { Editor as TinyMCEEditorInstance } from "tinymce";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "../../contexts/ThemeContext";
 
 
@@ -57,6 +58,8 @@ function TinyMCEEditor({ defaultValue, onChange }: TinyMCEEditorProps) {
 	onChangeRef.current = onChange;
 
 	const { theme } = useTheme();
+	const { i18n } = useTranslation();
+	const isZh = i18n.language === 'zh-CN';
 
 	const handleInit = useCallback((_evt: unknown, editor: TinyMCEEditorInstance) => {
 		editorRef.current = editor;
@@ -78,8 +81,7 @@ function TinyMCEEditor({ defaultValue, onChange }: TinyMCEEditorProps) {
 			statusbar: false,
 			height: "100%",
 			resize: false,
-			language: "zh_CN",
-			language_url: "./tinymce/langs/zh_CN.js",
+			...(isZh ? { language: "zh_CN", language_url: "./tinymce/langs/zh_CN.js" } : {}),
 			skin_url: skinUrl,
 			content_css: contentCss,
 			content_style: contentStyle,
@@ -151,7 +153,7 @@ function TinyMCEEditor({ defaultValue, onChange }: TinyMCEEditorProps) {
 			},
 			automatic_uploads: true,
 		}),
-		[skinUrl, contentCss, contentStyle]
+		[skinUrl, contentCss, contentStyle, isZh]
 	);
 
 	return (

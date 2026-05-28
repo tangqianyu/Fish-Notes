@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface PasswordPromptProps {
   onVerify: (password: string) => Promise<boolean>;
@@ -8,6 +9,7 @@ interface PasswordPromptProps {
 }
 
 function PasswordPrompt({ onVerify, onCancel, message, buttonText }: PasswordPromptProps) {
+  const { t } = useTranslation();
   const [password, setPassword] = useState('');
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -35,13 +37,13 @@ function PasswordPrompt({ onVerify, onCancel, message, buttonText }: PasswordPro
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
         </svg>
         <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-          {message || '此笔记已加密，请输入密码查看'}
+          {message || t('This note is encrypted. Enter password to view.')}
         </p>
         <input
           type="password"
           value={password}
           onChange={(e) => { setPassword(e.target.value); setError(false); }}
-          placeholder="输入密码"
+          placeholder={t('Enter password')}
           autoFocus
           className="w-full px-3 py-2 rounded-lg border text-sm outline-none"
           style={{
@@ -51,7 +53,7 @@ function PasswordPrompt({ onVerify, onCancel, message, buttonText }: PasswordPro
           }}
         />
         {error && (
-          <p className="text-xs" style={{ color: '#ef4444' }}>密码错误，请重试</p>
+          <p className="text-xs" style={{ color: '#ef4444' }}>{t('Wrong password. Please try again.')}</p>
         )}
         <div className="flex gap-2 w-full">
           {onCancel && (
@@ -64,7 +66,7 @@ function PasswordPrompt({ onVerify, onCancel, message, buttonText }: PasswordPro
                 color: 'var(--text-secondary)',
               }}
             >
-              取消
+              {t('Cancel')}
             </button>
           )}
           <button
@@ -73,7 +75,7 @@ function PasswordPrompt({ onVerify, onCancel, message, buttonText }: PasswordPro
             className="flex-1 px-3 py-1.5 rounded-lg text-sm text-white transition-colors disabled:opacity-50"
             style={{ backgroundColor: '#3b82f6' }}
           >
-            {loading ? '验证中...' : (buttonText || '解锁')}
+            {loading ? t('Verifying...') : (buttonText || t('Unlock'))}
           </button>
         </div>
       </form>

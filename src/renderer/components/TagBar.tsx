@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useApp } from '../contexts/AppContext';
 
 interface TagBarProps {
@@ -6,6 +7,7 @@ interface TagBarProps {
 }
 
 function TagBar({ noteId }: TagBarProps) {
+  const { t } = useTranslation();
   const { state, addNoteTag, removeNoteTag } = useApp();
   const [noteTags, setNoteTags] = useState<TagData[]>([]);
   const [showPopup, setShowPopup] = useState(false);
@@ -119,7 +121,7 @@ function TagBar({ noteId }: TagBarProps) {
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="输入标签名..."
+                placeholder={t('Enter tag name...')}
                 className="w-full px-2 py-1 text-sm rounded border outline-none"
                 style={{
                   backgroundColor: 'var(--bg-primary)',
@@ -152,7 +154,7 @@ function TagBar({ noteId }: TagBarProps) {
                   className="w-full text-left px-3 py-1.5 text-sm transition-colors hover:opacity-80"
                   style={{ color: 'var(--text-secondary)' }}
                 >
-                  创建 <strong>#{inputValue.trim()}</strong>
+                  {t('Create')} <strong>#{inputValue.trim()}</strong>
                 </button>
               </div>
             )}

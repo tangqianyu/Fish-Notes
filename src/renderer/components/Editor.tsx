@@ -1,4 +1,5 @@
 import React, { useCallback, useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import TinyMCEEditor from './editor/TinyMCEEditor';
 import TagBar from './TagBar';
 import PasswordPrompt from './PasswordPrompt';
@@ -15,6 +16,7 @@ interface EditorProps {
 }
 
 function Editor({ noteId, title, content, isLocked, onContentChange }: EditorProps) {
+  const { t, i18n } = useTranslation();
   const { save } = useAutoSave(500);
   const { save: saveTitle } = useAutoSave(500);
   const { updateNoteTitle, sessionUnlocked, verifyPassword, encryptionReady, lockNote, unlockNote } = useApp();
@@ -72,7 +74,7 @@ function Editor({ noteId, title, content, isLocked, onContentChange }: EditorPro
       setLocalTitle(newTitle);
       if (!noteId) return;
       saveTitle(() => {
-        updateNoteTitle(noteId, newTitle || '无标题');
+        updateNoteTitle(noteId, newTitle || t('Untitled'));
       });
     },
     [noteId, saveTitle, updateNoteTitle],
@@ -147,7 +149,7 @@ function Editor({ noteId, title, content, isLocked, onContentChange }: EditorPro
                 onClick={handleLockToggle}
                 className="p-1.5 rounded transition-colors hover:opacity-70"
                 style={{ color: isLocked ? '#3b82f6' : 'var(--text-tertiary)' }}
-                title={isLocked ? '移除加密' : '加密笔记'}
+                title={isLocked ? t('Remove Encryption') : t('Encrypt Note')}
               >
                 {isLocked ? (
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -167,7 +169,7 @@ function Editor({ noteId, title, content, isLocked, onContentChange }: EditorPro
                 onClick={() => setShowExportMenu(!showExportMenu)}
                 className="p-1.5 rounded transition-colors hover:opacity-70"
                 style={{ color: 'var(--text-tertiary)' }}
-                title="导出"
+                title={t('Export')}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -193,7 +195,7 @@ function Editor({ noteId, title, content, isLocked, onContentChange }: EditorPro
           <PasswordPrompt onVerify={handleVerify} />
         ) : loadingDecrypted ? (
           <div className="flex-1 flex items-center justify-center" style={{ color: 'var(--text-tertiary)' }}>
-            解密中...
+            {t('Decrypting...')}
           </div>
         ) : (
           <>
@@ -202,7 +204,7 @@ function Editor({ noteId, title, content, isLocked, onContentChange }: EditorPro
               type="text"
               value={localTitle}
               onChange={handleTitleChange}
-              placeholder="无标题"
+              placeholder={t('Untitled')}
               className="px-4 py-2 text-xl font-semibold outline-none shrink-0"
               style={{
                 backgroundColor: 'transparent',
@@ -215,12 +217,12 @@ function Editor({ noteId, title, content, isLocked, onContentChange }: EditorPro
             <TagBar noteId={noteId} />
 
             {/* Row 3: TinyMCE editor */}
-            <TinyMCEEditor key={`${noteId}-${theme}`} defaultValue={editorContent} onChange={handleChange} />
+            <TinyMCEEditor key={`${noteId}-${theme}-${i18n.language}`} defaultValue={editorContent} onChange={handleChange} />
           </>
         )
       ) : (
         <div className="flex-1 flex items-center justify-center" style={{ color: 'var(--text-tertiary)' }}>
-          选择或创建一篇笔记开始写作
+          {t('Select or create a note to start writing')}
         </div>
       )}
     </div>

@@ -73,7 +73,9 @@ public/
 ## 核心数据流
 
 ### 编辑保存
-用户输入 → TinyMCE onEditorChange → HTML 字符串 → Editor.tsx handleChange → useAutoSave(500ms) → AppContext.updateNoteContent → extractTitle + stripHtml + IPC 保存
+- **内容保存**: 用户输入 → TinyMCE `input`/`ExecCommand`/`Undo`/`Redo` 事件 → `editor.getContent()` 获取 HTML → Editor.handleChange（跳过无变化内容）→ useAutoSave(500ms 防抖) → AppContext.updateNoteContent → stripHtml 提取纯文本 → IPC 保存 content + contentText 到 SQLite + dispatch 更新状态
+- **标题保存**: title input onChange → 独立的 useAutoSave(500ms) → updateNoteTitle → IPC 保存
+- **快捷保存**: Ctrl+S 绕过防抖直接触发保存
 
 ### 标签系统
 - **标签管理**: 标签通过 TagBar 的 `+` 按钮直接添加/移除，不从编辑器内容中自动解析（parseTags 和 hashtagDetector 均已移除）
@@ -82,8 +84,8 @@ public/
 - **侧边栏**: 树形展示所有标签，显示笔记数量（排除已删除），缩进表示层级（每级 16px），点击切换到该标签视图
 - **右键菜单**: 置顶/取消置顶、重命名（内联编辑，仅编辑叶子名称，自动重建完整路径）、删除标签；菜单自动调整位置防溢出
 - **置顶**: 置顶标签排在最前，显示 📌 图标，状态通过 `tags.isPinned` 持久化到数据库
-- **删除**: 从 `note_tags` 移除关联 → 删除 `tags` 记录 → 遍历受影响笔记，用正则移除 `<span class="hashtag">#tag</span>` 和裸文本 `#tag` → 多余空格压缩 → 更新 title/content/contentText → 若当前正在查看该标签则切回 all 视图
-- **重命名**: 更新 `tags` 表 name → 遍历关联笔记，正则替换 span 包裹内和裸文本中的旧标签名为新名 → 更新 title/content/contentText
+- **删除**: 从 `note_tags` 移除关联 → 删除 `tags` 记录 → 若当前正在查看该标签则切回 all 视图 → 刷新标签和笔记列表
+- **重命名**: 更新 `tags` 表 name → 刷新标签和笔记列表（不再修改笔记内容）
 - **自动标签**: 在标签视图下新建笔记时自动添加该标签
 - **清理**: 移除标签后调用 `cleanupUnused()` 删除 `note_tags` 中无关联的孤立标签
 

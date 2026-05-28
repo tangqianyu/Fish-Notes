@@ -1,6 +1,7 @@
 import Layout from './components/Layout';
 import { AppProvider } from './contexts/AppContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import './i18n';
 
 function App() {
   return (

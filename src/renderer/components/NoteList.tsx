@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useApp } from '../contexts/AppContext';
 import PasswordPrompt from './PasswordPrompt';
 
@@ -14,6 +15,7 @@ interface NoteContextMenu {
 }
 
 function NoteList({ width, onResizeStart }: NoteListProps) {
+  const { t } = useTranslation();
   const { state, createNote, selectNote, trashNote, restoreNote, deleteNotePermanently, togglePinNote, lockNote, unlockNote, encryptionReady, sessionUnlocked, verifyPassword } = useApp();
   const { notes, selectedNoteId, viewMode } = state;
 
@@ -21,7 +23,7 @@ function NoteList({ width, onResizeStart }: NoteListProps) {
   const [showPasswordPrompt, setShowPasswordPrompt] = useState(false);
   const pendingActionRef = useRef<(() => Promise<void>) | null>(null);
 
-  const headerLabel = viewMode === 'trash' ? '回收站' : '所有笔记';
+  const headerLabel = viewMode === 'trash' ? t('Trash') : t('All Notes');
 
   useEffect(() => {
     if (!contextMenu) return;
@@ -123,7 +125,7 @@ function NoteList({ width, onResizeStart }: NoteListProps) {
             onClick={createNote}
             className="p-1 rounded transition-colors hover:opacity-70"
             style={{ color: 'var(--text-tertiary)' }}
-            title="新建笔记"
+            title={t('New Note')}
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -136,7 +138,7 @@ function NoteList({ width, onResizeStart }: NoteListProps) {
       <div className="flex-1 overflow-y-auto">
         {notes.length === 0 ? (
           <div className="flex items-center justify-center h-full text-sm" style={{ color: 'var(--text-tertiary)' }}>
-            暂无笔记
+            {t('No notes')}
           </div>
         ) : (
           notes.map((note) => (
@@ -161,25 +163,25 @@ function NoteList({ width, onResizeStart }: NoteListProps) {
       {contextMenu && (
         viewMode === 'trash' ? (
           <NoteContextMenuPopup x={contextMenu.x} y={contextMenu.y}>
-            <ContextMenuItem label="恢复" onClick={handleRestore} />
+            <ContextMenuItem label={t('Restore')} onClick={handleRestore} />
             <div className="my-1 border-t" style={{ borderColor: 'var(--border-secondary)' }} />
-            <ContextMenuItem label="永久删除" onClick={handleDeletePermanently} danger />
+            <ContextMenuItem label={t('Delete Permanently')} onClick={handleDeletePermanently} danger />
           </NoteContextMenuPopup>
         ) : (
           <NoteContextMenuPopup x={contextMenu.x} y={contextMenu.y}>
-            <ContextMenuItem label={contextNote?.isPinned ? '取消置顶' : '置顶'} onClick={handleTogglePin} />
+            <ContextMenuItem label={contextNote?.isPinned ? t('Unpin') : t('Pin')} onClick={handleTogglePin} />
             {encryptionReady && (
               <>
                 <div className="my-1 border-t" style={{ borderColor: 'var(--border-secondary)' }} />
                 {contextNote?.isLocked ? (
-                  <ContextMenuItem label="移除加密" onClick={handleUnlock} />
+                  <ContextMenuItem label={t('Remove Encryption')} onClick={handleUnlock} />
                 ) : (
-                  <ContextMenuItem label="加密笔记" onClick={handleLock} />
+                  <ContextMenuItem label={t('Encrypt Note')} onClick={handleLock} />
                 )}
               </>
             )}
             <div className="my-1 border-t" style={{ borderColor: 'var(--border-secondary)' }} />
-            <ContextMenuItem label="删除" onClick={handleTrash} danger />
+            <ContextMenuItem label={t('Delete')} onClick={handleTrash} danger />
           </NoteContextMenuPopup>
         )
       )}
@@ -192,7 +194,7 @@ function NoteList({ width, onResizeStart }: NoteListProps) {
             style={{ backgroundColor: 'var(--card-bg)' }}
             onClick={(e) => e.stopPropagation()}
           >
-            <PasswordPrompt onVerify={handlePasswordVerify} onCancel={handlePasswordCancel} message="请输入密码以继续操作" buttonText="确认" />
+            <PasswordPrompt onVerify={handlePasswordVerify} onCancel={handlePasswordCancel} message={t('Enter password to continue')} buttonText={t('Confirm')} />
           </div>
         </div>
       )}
@@ -200,22 +202,22 @@ function NoteList({ width, onResizeStart }: NoteListProps) {
   );
 }
 
-function formatRelativeDate(dateStr: string): string {
+function formatRelativeDate(dateStr: string, t: (key: string, opts?: Record<string, unknown>) => string): string {
   const now = new Date();
   const date = new Date(dateStr);
   const diffMs = now.getTime() - date.getTime();
   const diffMin = Math.floor(diffMs / 60000);
   const diffHour = Math.floor(diffMs / 3600000);
 
-  if (diffMin < 1) return '刚刚';
-  if (diffHour < 1) return `${diffMin} 分钟前`;
-  if (diffHour < 24) return `${diffHour} 小时前`;
+  if (diffMin < 1) return t('Just now');
+  if (diffHour < 1) return t('{{n}} min ago', { n: diffMin });
+  if (diffHour < 24) return t('{{n}} hr ago', { n: diffHour });
 
   const sameYear = now.getFullYear() === date.getFullYear();
   if (sameYear) {
-    return `${date.getMonth() + 1} 月 ${date.getDate()} 日`;
+    return t('{{month}}/{{day}}', { month: date.getMonth() + 1, day: date.getDate() });
   }
-  return `${date.getFullYear()} 年 ${date.getMonth() + 1} 月 ${date.getDate()} 日`;
+  return t('{{month}}/{{day}}/{{year}}', { year: date.getFullYear(), month: date.getMonth() + 1, day: date.getDate() });
 }
 
 function NoteListItem({ note, isSelected, onClick, onContextMenu }: {
@@ -224,7 +226,8 @@ function NoteListItem({ note, isSelected, onClick, onContextMenu }: {
   onClick: () => void;
   onContextMenu: (e: React.MouseEvent) => void;
 }) {
-  const title = note.title || '无标题';
+  const { t } = useTranslation();
+  const title = note.title || t('Untitled');
   const preview = note.content
     .replace(/<h1[^>]*>.*?<\/h1>/i, '')
     .replace(/<span class="hashtag">[^<]*<\/span>/g, '')
@@ -236,7 +239,7 @@ function NoteListItem({ note, isSelected, onClick, onContextMenu }: {
     .replace(/\s+/g, ' ')
     .trim()
     .slice(0, 80);
-  const date = formatRelativeDate(note.updatedAt);
+  const date = formatRelativeDate(note.updatedAt, t);
 
   return (
     <button
@@ -258,7 +261,7 @@ function NoteListItem({ note, isSelected, onClick, onContextMenu }: {
         {title}
       </div>
       {note.isLocked ? (
-        <div className="mt-1 text-xs truncate" style={{ color: 'var(--text-tertiary)' }}>加密笔记</div>
+        <div className="mt-1 text-xs truncate" style={{ color: 'var(--text-tertiary)' }}>{t('Encrypted note')}</div>
       ) : (
         preview && <div className="mt-1 text-xs truncate" style={{ color: 'var(--text-tertiary)' }}>{preview}</div>
       )}

@@ -1,6 +1,6 @@
 import React, { useCallback, useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import TinyMCEEditor from './editor/TinyMCEEditor';
+import MarkdownEditor from './editor/MarkdownEditor';
 import TagBar from './TagBar';
 import PasswordPrompt from './PasswordPrompt';
 import { useAutoSave } from '../hooks/useAutoSave';
@@ -29,10 +29,7 @@ function Editor({ noteId, title, content, isLocked, onContentChange }: EditorPro
   const [decryptedContent, setDecryptedContent] = useState<string | null>(null);
   const [loadingDecrypted, setLoadingDecrypted] = useState(false);
 
-  // Keep initialContent stable per note to prevent @tinymce/tinymce-react from calling
-  // setContent() when selectedNote.content updates in state (which resets the cursor).
   const initialContentRef = useRef(content);
-  // Track the last known content to skip no-op saves (e.g. TinyMCE init events)
   const lastContentRef = useRef(content);
   const prevNoteIdRef = useRef(noteId);
   if (noteId !== prevNoteIdRef.current) {
@@ -81,12 +78,12 @@ function Editor({ noteId, title, content, isLocked, onContentChange }: EditorPro
   );
 
   const handleChange = useCallback(
-    (html: string) => {
+    (md: string) => {
       if (!noteId) return;
-      if (html === lastContentRef.current) return;
-      lastContentRef.current = html;
+      if (md === lastContentRef.current) return;
+      lastContentRef.current = md;
       save(() => {
-        onContentChange?.(noteId, html);
+        onContentChange?.(noteId, md);
       });
     },
     [noteId, save, onContentChange],
@@ -216,8 +213,8 @@ function Editor({ noteId, title, content, isLocked, onContentChange }: EditorPro
             {/* Row 2: Tags */}
             <TagBar noteId={noteId} />
 
-            {/* Row 3: TinyMCE editor */}
-            <TinyMCEEditor key={`${noteId}-${theme}-${i18n.language}`} defaultValue={editorContent} onChange={handleChange} />
+            {/* Row 3: Markdown editor */}
+            <MarkdownEditor key={`${noteId}-${theme}-${i18n.language}`} defaultValue={editorContent} onChange={handleChange} />
           </>
         )
       ) : (

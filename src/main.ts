@@ -37,15 +37,17 @@ const createWindow = () => {
   });
 
   // 外部链接用系统浏览器打开
+  const EXTERNAL_PROTOCOL = /^(https?|mailto|tel):/i;
+
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    if (url.startsWith('http://') || url.startsWith('https://')) {
+    if (EXTERNAL_PROTOCOL.test(url)) {
       shell.openExternal(url);
     }
     return { action: 'deny' };
   });
 
   mainWindow.webContents.on('will-navigate', (event, url) => {
-    if (url.startsWith('http://') || url.startsWith('https://')) {
+    if (EXTERNAL_PROTOCOL.test(url)) {
       event.preventDefault();
       shell.openExternal(url);
     }

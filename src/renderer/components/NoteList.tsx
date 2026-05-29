@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useApp } from '../contexts/AppContext';
 import PasswordPrompt from './PasswordPrompt';
+import { buildNotePreview } from '../utils/mdUtils';
 
 interface NoteListProps {
   width: number;
@@ -228,17 +229,7 @@ function NoteListItem({ note, isSelected, onClick, onContextMenu }: {
 }) {
   const { t } = useTranslation();
   const title = note.title || t('Untitled');
-  const preview = note.content
-    .replace(/<h1[^>]*>.*?<\/h1>/i, '')
-    .replace(/<span class="hashtag">[^<]*<\/span>/g, '')
-    .replace(/<[^>]*>/g, '')
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .slice(0, 80);
+  const preview = buildNotePreview(note.content);
   const date = formatRelativeDate(note.updatedAt, t);
 
   return (

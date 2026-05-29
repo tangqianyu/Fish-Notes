@@ -1,5 +1,5 @@
 import { createContext, useContext, useReducer, useEffect, useCallback, useState, type ReactNode } from 'react';
-import { stripHtml } from '../utils/htmlUtils';
+import { stripMarkdown } from '../utils/mdUtils';
 
 type ViewMode = 'all' | 'trash' | 'tag';
 
@@ -175,7 +175,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const updateNoteContent = useCallback(
     (id: string, content: string) => {
-      const contentText = stripHtml(content);
+      const contentText = stripMarkdown(content);
       window.api.notes.update(id, { content, contentText });
       dispatch({
         type: 'UPDATE_NOTE',

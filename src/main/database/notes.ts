@@ -3,6 +3,7 @@ import { getDatabase, getRawDatabase } from './index';
 import { notes } from './schema';
 import crypto from 'node:crypto';
 import { getCachedKey, encrypt, decrypt } from '../encryption';
+import { htmlToMarkdown, looksLikeHtml, stripMarkdownForFts } from '../markdown';
 
 export interface NoteData {
   id: string;
@@ -24,13 +25,15 @@ export function createNote(): NoteData {
   const id = generateId();
   const now = new Date().toISOString();
 
-  db.insert(notes).values({
-    id,
-    title: '',
-    content: '',
-    createdAt: now,
-    updatedAt: now,
-  }).run();
+  db.insert(notes)
+    .values({
+      id,
+      title: '',
+      content: '',
+      createdAt: now,
+      updatedAt: now,
+    })
+    .run();
 
   return {
     id,
@@ -47,14 +50,13 @@ export function createNote(): NoteData {
 export function getAllNotes(): NoteData[] {
   const db = getDatabase();
   const rows = db.select().from(notes).where(eq(notes.isTrashed, false)).all() as NoteData[];
-  // Strip content from locked notes for the list view
-  return rows.map((row) => row.isLocked ? { ...row, content: '' } : row);
+  return rows.map((row) => (row.isLocked ? { ...row, content: '' } : row));
 }
 
 export function getTrashedNotes(): NoteData[] {
   const db = getDatabase();
   const rows = db.select().from(notes).where(eq(notes.isTrashed, true)).all() as NoteData[];
-  return rows.map((row) => row.isLocked ? { ...row, content: '' } : row);
+  return rows.map((row) => (row.isLocked ? { ...row, content: '' } : row));
 }
 
 export function getNote(id: string): NoteData | undefined {
@@ -62,13 +64,11 @@ export function getNote(id: string): NoteData | undefined {
   const note = db.select().from(notes).where(eq(notes.id, id)).get() as NoteData | undefined;
   if (!note) return undefined;
   if (note.isLocked) {
-    // Strip content — caller must use getDecryptedNote to get content
     return { ...note, content: '' };
   }
   return note;
 }
 
-/** Get decrypted content for a locked note. Requires cached key. */
 export function getDecryptedNote(id: string): NoteData | undefined {
   const db = getDatabase();
   const note = db.select().from(notes).where(eq(notes.id, id)).get() as NoteData | undefined;
@@ -85,10 +85,12 @@ export function getDecryptedNote(id: string): NoteData | undefined {
   }
 }
 
-export function updateNote(id: string, data: { title?: string; content?: string; contentText?: string }): void {
+export function updateNote(
+  id: string,
+  data: { title?: string; content?: string; contentText?: string },
+): void {
   const db = getDatabase();
 
-  // Check if the note is locked — if so, encrypt the content before saving
   const note = db.select({ isLocked: notes.isLocked }).from(notes).where(eq(notes.id, id)).get();
   const updateData: Record<string, unknown> = {
     ...data,
@@ -99,18 +101,13 @@ export function updateNote(id: string, data: { title?: string; content?: string;
     const key = getCachedKey();
     if (key) {
       updateData.content = encrypt(data.content, key);
-      // Clear content_text so encrypted notes aren't in FTS
       updateData.contentText = '';
     }
   }
 
-  db.update(notes)
-    .set(updateData)
-    .where(eq(notes.id, id))
-    .run();
+  db.update(notes).set(updateData).where(eq(notes.id, id)).run();
 }
 
-/** Lock a note: encrypt its content and set is_locked = true */
 export function lockNote(id: string): boolean {
   const key = getCachedKey();
   if (!key) return false;
@@ -134,42 +131,56 @@ export function lockNote(id: string): boolean {
   return true;
 }
 
-/** Unlock a note: decrypt its content and set is_locked = false */
 export function unlockNote(id: string): boolean {
   const key = getCachedKey();
   if (!key) return false;
 
-  const db = getDatabase();
-  const note = db.select().from(notes).where(eq(notes.id, id)).get() as NoteData | undefined;
-  if (!note || !note.isLocked) return false;
+  const rawDb = getRawDatabase();
+  const row = rawDb
+    .prepare('SELECT content, content_format, content_html_legacy FROM notes WHERE id = ?')
+    .get(id) as
+    | { content: string; content_format: string; content_html_legacy: string }
+    | undefined;
+  if (!row) return false;
 
   let decryptedContent = '';
   try {
-    decryptedContent = note.content ? decrypt(note.content, key) : '';
+    decryptedContent = row.content ? decrypt(row.content, key) : '';
   } catch {
     return false;
   }
 
-  // Restore content_text for FTS indexing
-  const contentText = stripHtmlForFts(decryptedContent);
+  // Lazy HTML → Markdown migration for locked notes that pre-date the editor switch.
+  // The migration in database/index.ts skipped them because we can't decrypt without the key.
+  let nextFormat = row.content_format || 'markdown';
+  let legacy = row.content_html_legacy;
+  if (decryptedContent && (nextFormat === 'html' || looksLikeHtml(decryptedContent))) {
+    legacy = decryptedContent;
+    decryptedContent = htmlToMarkdown(decryptedContent);
+    nextFormat = 'markdown';
+  }
 
-  db.update(notes)
-    .set({
-      content: decryptedContent,
-      contentText,
-      isLocked: false,
-      updatedAt: new Date().toISOString(),
-    })
-    .where(eq(notes.id, id))
-    .run();
+  rawDb
+    .prepare(
+      'UPDATE notes SET content = ?, content_text = ?, content_format = ?, content_html_legacy = ?, is_locked = 0, updated_at = ? WHERE id = ?',
+    )
+    .run(
+      decryptedContent,
+      stripMarkdownForFts(decryptedContent),
+      nextFormat,
+      legacy,
+      new Date().toISOString(),
+      id,
+    );
 
   return true;
 }
 
-/** Re-encrypt all locked notes with a new key (used during password change) */
 export function reEncryptAllNotes(oldKey: Buffer, newKey: Buffer): void {
   const rawDb = getRawDatabase();
-  const rows = rawDb.prepare('SELECT id, content FROM notes WHERE is_locked = 1').all() as { id: string; content: string }[];
+  const rows = rawDb
+    .prepare('SELECT id, content FROM notes WHERE is_locked = 1')
+    .all() as { id: string; content: string }[];
 
   const stmt = rawDb.prepare('UPDATE notes SET content = ? WHERE id = ?');
   const transaction = rawDb.transaction(() => {
@@ -183,20 +194,34 @@ export function reEncryptAllNotes(oldKey: Buffer, newKey: Buffer): void {
   transaction();
 }
 
-/** Decrypt all locked notes and remove locks (used when removing password) */
 export function decryptAllNotes(key: Buffer): void {
   const rawDb = getRawDatabase();
-  const rows = rawDb.prepare('SELECT id, content FROM notes WHERE is_locked = 1').all() as { id: string; content: string }[];
+  const rows = rawDb
+    .prepare('SELECT id, content, content_format, content_html_legacy FROM notes WHERE is_locked = 1')
+    .all() as {
+    id: string;
+    content: string;
+    content_format: string;
+    content_html_legacy: string;
+  }[];
 
-  const stmt = rawDb.prepare('UPDATE notes SET content = ?, content_text = ?, is_locked = 0 WHERE id = ?');
+  const stmt = rawDb.prepare(
+    'UPDATE notes SET content = ?, content_text = ?, content_format = ?, content_html_legacy = ?, is_locked = 0 WHERE id = ?',
+  );
   const transaction = rawDb.transaction(() => {
     for (const row of rows) {
       let plaintext = '';
-      if (row.content) {
-        plaintext = decrypt(row.content, key);
+      if (row.content) plaintext = decrypt(row.content, key);
+
+      let format = row.content_format || 'markdown';
+      let legacy = row.content_html_legacy;
+      if (plaintext && (format === 'html' || looksLikeHtml(plaintext))) {
+        legacy = plaintext;
+        plaintext = htmlToMarkdown(plaintext);
+        format = 'markdown';
       }
-      const contentText = stripHtmlForFts(plaintext);
-      stmt.run(plaintext, contentText, row.id);
+
+      stmt.run(plaintext, stripMarkdownForFts(plaintext), format, legacy, row.id);
     }
   });
   transaction();
@@ -229,8 +254,4 @@ export function togglePinNote(id: string): boolean {
   const newPinned = !note?.isPinned;
   db.update(notes).set({ isPinned: newPinned }).where(eq(notes.id, id)).run();
   return newPinned;
-}
-
-function stripHtmlForFts(html: string): string {
-  return html.replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/\s+/g, ' ').trim();
 }

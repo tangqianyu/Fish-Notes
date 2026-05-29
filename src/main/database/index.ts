@@ -2,8 +2,13 @@ import Database from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { app } from 'electron';
 import path from 'node:path';
-import { marked } from 'marked';
 import * as schema from './schema';
+import {
+  htmlToMarkdown,
+  markdownToHtml,
+  stripHtmlForFts,
+  stripMarkdownForFts,
+} from '../markdown';
 
 let db: ReturnType<typeof drizzle<typeof schema>>;
 let rawDb: Database.Database;
@@ -12,11 +17,9 @@ export function initDatabase() {
   const dbPath = path.join(app.getPath('userData'), 'fish-notes.db');
   const sqlite = new Database(dbPath);
 
-  // Enable WAL mode for better performance
   sqlite.pragma('journal_mode = WAL');
   sqlite.pragma('foreign_keys = ON');
 
-  // Create tables if not exist
   sqlite.exec(`
     CREATE TABLE IF NOT EXISTS notes (
       id TEXT PRIMARY KEY,
@@ -45,12 +48,10 @@ export function initDatabase() {
       value TEXT NOT NULL
     );
 
-    -- FTS5 for full-text search
     CREATE VIRTUAL TABLE IF NOT EXISTS notes_fts USING fts5(
       title, content, content=notes, content_rowid=rowid
     );
 
-    -- Triggers to keep FTS in sync
     CREATE TRIGGER IF NOT EXISTS notes_ai AFTER INSERT ON notes BEGIN
       INSERT INTO notes_fts(rowid, title, content) VALUES (new.rowid, new.title, new.content);
     END;
@@ -65,53 +66,74 @@ export function initDatabase() {
     END;
   `);
 
-  // Migration: add is_pinned column to tags if missing (for existing databases)
   const tagColumns = sqlite.pragma('table_info(tags)') as { name: string }[];
   if (!tagColumns.some((c) => c.name === 'is_pinned')) {
     sqlite.exec('ALTER TABLE tags ADD COLUMN is_pinned INTEGER NOT NULL DEFAULT 0');
   }
 
-  // Migration: add is_pinned column to notes if missing
   const noteColumns = sqlite.pragma('table_info(notes)') as { name: string }[];
   if (!noteColumns.some((c) => c.name === 'is_pinned')) {
     sqlite.exec('ALTER TABLE notes ADD COLUMN is_pinned INTEGER NOT NULL DEFAULT 0');
   }
 
-  // Migration: Markdown → HTML content format
+  // Historical migration: Markdown → HTML (older DBs). Kept for upgrade chains.
   const noteColsAfter = sqlite.pragma('table_info(notes)') as { name: string }[];
   if (!noteColsAfter.some((c) => c.name === 'content_format')) {
     sqlite.exec("ALTER TABLE notes ADD COLUMN content_format TEXT NOT NULL DEFAULT 'markdown'");
     sqlite.exec("ALTER TABLE notes ADD COLUMN content_text TEXT NOT NULL DEFAULT ''");
 
-    // Convert existing markdown notes to HTML
-    const mdNotes = sqlite.prepare(
-      "SELECT id, content FROM notes WHERE content_format = 'markdown' AND content != ''"
-    ).all() as { id: string; content: string }[];
+    const mdNotes = sqlite
+      .prepare(
+        "SELECT id, content FROM notes WHERE content_format = 'markdown' AND content != ''",
+      )
+      .all() as { id: string; content: string }[];
 
     const updateStmt = sqlite.prepare(
-      "UPDATE notes SET content = ?, content_text = ?, content_format = 'html' WHERE id = ?"
+      "UPDATE notes SET content = ?, content_text = ?, content_format = 'html' WHERE id = ?",
     );
 
     for (const note of mdNotes) {
-      const htmlContent = convertMarkdownToHtml(note.content);
-      const plainText = stripHtmlTags(htmlContent);
+      const htmlContent = markdownToHtml(note.content);
+      const plainText = stripHtmlForFts(htmlContent);
       updateStmt.run(htmlContent, plainText, note.id);
     }
 
-    // Mark empty notes as html too
     sqlite.exec("UPDATE notes SET content_format = 'html' WHERE content = ''");
-
-    // Rebuild FTS index with plain text
     sqlite.exec("INSERT INTO notes_fts(notes_fts) VALUES('rebuild')");
   }
 
-  // Migration: add is_locked column to notes if missing
   const noteColsFinal = sqlite.pragma('table_info(notes)') as { name: string }[];
   if (!noteColsFinal.some((c) => c.name === 'is_locked')) {
     sqlite.exec('ALTER TABLE notes ADD COLUMN is_locked INTEGER NOT NULL DEFAULT 0');
   }
 
-  // Update FTS triggers to use content_text for search indexing
+  // Migration: HTML → Markdown. Markdown is now the source of truth (better for AI,
+  // cleaner exports). Original HTML is preserved in content_html_legacy as a safety net.
+  // Locked notes are skipped here — they'll convert lazily on unlock (see notes.ts).
+  const noteColsForMd = sqlite.pragma('table_info(notes)') as { name: string }[];
+  if (!noteColsForMd.some((c) => c.name === 'content_html_legacy')) {
+    sqlite.exec("ALTER TABLE notes ADD COLUMN content_html_legacy TEXT NOT NULL DEFAULT ''");
+
+    const htmlNotes = sqlite
+      .prepare(
+        "SELECT id, content FROM notes WHERE content_format = 'html' AND content != '' AND is_locked = 0",
+      )
+      .all() as { id: string; content: string }[];
+
+    const updateMdStmt = sqlite.prepare(
+      "UPDATE notes SET content = ?, content_text = ?, content_html_legacy = ?, content_format = 'markdown' WHERE id = ?",
+    );
+
+    for (const note of htmlNotes) {
+      const md = htmlToMarkdown(note.content);
+      const plain = stripMarkdownForFts(md);
+      updateMdStmt.run(md, plain, note.content, note.id);
+    }
+
+    sqlite.exec("UPDATE notes SET content_format = 'markdown' WHERE content = '' AND is_locked = 0");
+    sqlite.exec("INSERT INTO notes_fts(notes_fts) VALUES('rebuild')");
+  }
+
   sqlite.exec(`
     DROP TRIGGER IF EXISTS notes_ai;
     DROP TRIGGER IF EXISTS notes_ad;
@@ -148,35 +170,4 @@ export function getRawDatabase(): Database.Database {
     throw new Error('Database not initialized. Call initDatabase() first.');
   }
   return rawDb;
-}
-
-function convertMarkdownToHtml(markdown: string): string {
-  // Protect #tag patterns from being parsed as headings
-  // Replace inline #tags (not at start-of-line heading position) with placeholder
-  const tagPlaceholders: string[] = [];
-  let processed = markdown.replace(
-    /(?<=\s|^)#([\p{L}\p{N}_][\p{L}\p{N}_/]*)/gu,
-    (match) => {
-      const idx = tagPlaceholders.length;
-      tagPlaceholders.push(match);
-      return `%%HASHTAG_${idx}%%`;
-    }
-  );
-
-  const html = marked.parse(processed, { async: false }) as string;
-
-  // Restore #tag placeholders as styled spans
-  let result = html;
-  for (let i = 0; i < tagPlaceholders.length; i++) {
-    result = result.replace(
-      `%%HASHTAG_${i}%%`,
-      `<span class="hashtag">${tagPlaceholders[i]}</span>`
-    );
-  }
-
-  return result;
-}
-
-function stripHtmlTags(html: string): string {
-  return html.replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/\s+/g, ' ').trim();
 }

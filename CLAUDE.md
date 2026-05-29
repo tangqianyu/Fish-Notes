@@ -52,13 +52,15 @@ src/
 │   │   ├── Editor.tsx                   # 编辑器容器，useAutoSave + 导出菜单 + 加密锁定
 │   │   ├── TagBar.tsx                   # 标签管理栏
 │   │   ├── TitleBar.tsx                 # macOS 拖拽区域
+│   │   ├── Tooltip.tsx                  # 通用 tooltip（portal、200ms 延迟、kbd 样式快捷键）
 │   │   ├── editor/
 │   │   │   ├── MarkdownEditor.tsx       # 主入口：MD/Preview/Split 三 Tab 切换 + 工具栏 + 同步滚动
 │   │   │   ├── CodeMirrorView.tsx       # CodeMirror 6 封装（接口: defaultValue + onChange）
-│   │   │   ├── MarkdownPreview.tsx      # marked 渲染 + prose 样式 + hashtag span
-│   │   │   ├── EditorToolbar.tsx        # Markdown 快捷输入工具栏
+│   │   │   ├── MarkdownPreview.tsx      # marked 渲染 + prose 样式 + hashtag span + 外链处理
+│   │   │   ├── EditorToolbar.tsx        # Markdown 快捷输入工具栏（Tooltip + 平台感知快捷键）
+│   │   │   ├── TablePicker.tsx          # 8×8 网格选择器（hover 高亮、点击插入对齐表格）
 │   │   │   └── extensions/
-│   │   │       ├── markdownCommands.ts  # 工具栏 + 键盘共享命令（toggleBold/Italic/List...）
+│   │   │       ├── markdownCommands.ts  # 工具栏 + 键盘共享命令（toggleBold/List/insertTable/formatTable...）
 │   │   │       ├── smartTyping.ts       # 列表续行 / 空列表退出 keymap
 │   │   │       ├── imageHandling.ts     # 拖拽/粘贴图片 → fish-image:// 协议
 │   │   │       └── themes.ts            # 4 个 app 主题对应的 CodeMirror 主题
@@ -89,17 +91,24 @@ src/
 
 **3 Tab 切换**: MD（纯源码）/ Preview（纯渲染）/ Split（左右分屏，百分比同步滚动）。状态持久化到 localStorage（`fish-notes:editor-mode`）。Cmd+1/2/3 切换。
 
-**工具栏**: 默认显示，覆盖 H/B/I/S/link/code/quote/list/image/hr。可通过 localStorage `fish-notes:editor-toolbar` 隐藏。
+**工具栏**: 默认显示，覆盖 B/I/S/H(下拉 1-6)/quote/link/inline-code/code-block/ul/ol/task/image/hr/table-picker/format-table。每个按钮带 Tooltip（label + 平台感知 kbd 快捷键），通过 localStorage `fish-notes:editor-toolbar` 控制显隐。
 
 **Markdown 快捷输入**（4 层叠加）:
 1. **键盘快捷键**: Cmd+B/I/E/K/Shift+S/Shift+E/Shift+L/Shift+O/Shift+T/Shift+. + Cmd+1~6（标题）
-2. **工具栏按钮**: 复用第 1 层的 command 实现
+2. **工具栏按钮**: 复用第 1 层的 command 实现；`HeadingMenu`/`TableMenu` 是带 dropdown 的复合按钮
 3. **Slash 命令**: 暂未实现（Phase 2）
 4. **智能行为**: closeBrackets 自动闭合括号、列表续行（Enter）、空列表回车退出
+
+**表格支持**:
+- `insertTable(rows, cols)` 命令插入对齐的空表模板，光标落在首个 header 单元格
+- `formatTable` 命令检测光标当前行所在的表格，找每列最大宽度，重排所有单元格 padding 一致，保留对齐标记（`:--` / `--:`）
+- `TablePicker` 是网格选择器组件，hover 高亮左上区域，顶部显示 "N × M"，点击触发 `insertTable`
 
 **主题适配**: `extensions/themes.ts` 为 4 个 app 主题各写一份 EditorView.theme + HighlightStyle，通过 `useTheme()` 选择。编辑器以 `noteId-theme-language` 为 React key，主题/语言切换时完全重建。
 
 **图片处理**: `imageHandling.ts` 在 CodeMirror DOM 上挂 drop/paste 事件 → window.api.images.saveFromBuffer → 插入 `![](fish-image://uuid)`。
+
+**外部链接**: `MarkdownPreview` 渲染后 regex 给所有 `<a>` 加 `target="_blank" rel="noopener"`，再加一层 click 兜底拦截 http/https/mailto/tel 协议调 `window.open(href, '_blank')`，最终由 main.ts 的 `setWindowOpenHandler` 路由到 `shell.openExternal`，用系统默认浏览器打开。
 
 ### 标签系统
 - **标签管理**: 标签通过 TagBar 的 `+` 按钮直接添加/移除，不从编辑器内容中自动解析

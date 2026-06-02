@@ -19,11 +19,48 @@ export function htmlToMarkdown(html: string): string {
   return turndown.turndown(html);
 }
 
+// Inject "&nbsp;" paragraphs for each blank line beyond the first so that user-typed
+// extra Enter keys produce visible vertical space (matches preview behavior).
+function preserveBlankLines(md: string): string {
+  const lines = md.split('\n');
+  const result: string[] = [];
+  let consecutiveBlank = 0;
+  let inCodeBlock = false;
+
+  for (const line of lines) {
+    if (/^\s*```/.test(line)) {
+      inCodeBlock = !inCodeBlock;
+      result.push(line);
+      consecutiveBlank = 0;
+      continue;
+    }
+    if (inCodeBlock) {
+      result.push(line);
+      consecutiveBlank = 0;
+      continue;
+    }
+    if (line.trim() === '') {
+      consecutiveBlank++;
+      if (consecutiveBlank === 1) {
+        result.push('');
+      } else {
+        result.push('&nbsp;');
+        result.push('');
+      }
+    } else {
+      consecutiveBlank = 0;
+      result.push(line);
+    }
+  }
+
+  return result.join('\n');
+}
+
 export function markdownToHtml(md: string): string {
   if (!md) return '';
 
   const tagPlaceholders: string[] = [];
-  const processed = md.replace(
+  const processed = preserveBlankLines(md).replace(
     /(?<=\s|^)#([\p{L}\p{N}_][\p{L}\p{N}_/]*)/gu,
     (match) => {
       const idx = tagPlaceholders.length;
@@ -40,6 +77,9 @@ export function markdownToHtml(md: string): string {
       `<span class="hashtag">${tagPlaceholders[i]}</span>`,
     );
   }
+
+  // Tag blank-line paragraphs so the matching CSS can zero out their margins.
+  html = html.replace(/<p>\s*&nbsp;\s*<\/p>/g, '<p class="md-blank">&nbsp;</p>');
 
   return html;
 }

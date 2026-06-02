@@ -123,8 +123,11 @@ export function createEditorTheme(theme: AppTheme): Extension {
       '&.cm-focused': { outline: 'none' },
       '.cm-content': {
         caretColor: p.caret,
+        // Prefer CJK-monospace fonts (strict 2:1 with ASCII) before falling back to
+        // pure-ASCII monos. If none of the CJK ones are installed, the chain still
+        // works — system CJK font fallback kicks in, just with proportional widths.
         fontFamily:
-          'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+          '"Sarasa Mono SC", "Sarasa Mono SC Nerd", "Source Han Code JP", "Noto Sans Mono CJK SC", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
         padding: '16px',
         lineHeight: '1.6',
       },

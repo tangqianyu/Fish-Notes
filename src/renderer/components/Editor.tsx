@@ -23,6 +23,9 @@ function Editor({ noteId, title, content, isLocked, onContentChange }: EditorPro
   const { theme } = useTheme();
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [localTitle, setLocalTitle] = useState(title);
+  const [suggestingTitle, setSuggestingTitle] = useState(false);
+  const [suggestError, setSuggestError] = useState<string | null>(null);
+  const [titleCandidate, setTitleCandidate] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Decrypted content for locked notes
@@ -38,6 +41,8 @@ function Editor({ noteId, title, content, isLocked, onContentChange }: EditorPro
     prevNoteIdRef.current = noteId;
     setLocalTitle(title);
     setDecryptedContent(null);
+    setTitleCandidate(null);
+    setSuggestError(null);
   }
 
   // Fetch decrypted content when a locked note is opened and session is unlocked
@@ -126,6 +131,39 @@ function Editor({ noteId, title, content, isLocked, onContentChange }: EditorPro
     }
   }, [noteId, isLocked, lockNote, unlockNote]);
 
+  const handleSuggestTitle = useCallback(async () => {
+    if (!noteId || suggestingTitle) return;
+    const source = isLocked ? (decryptedContent ?? '') : (lastContentRef.current || content);
+    if (!source.trim()) {
+      setSuggestError(t('Note is empty'));
+      setTimeout(() => setSuggestError(null), 3000);
+      return;
+    }
+    setSuggestingTitle(true);
+    setSuggestError(null);
+    setTitleCandidate(null);
+    try {
+      const suggested = await window.api.ai.suggestTitle(source);
+      if (suggested) setTitleCandidate(suggested);
+    } catch (e) {
+      setSuggestError(e instanceof Error ? e.message : String(e));
+      setTimeout(() => setSuggestError(null), 5000);
+    } finally {
+      setSuggestingTitle(false);
+    }
+  }, [noteId, suggestingTitle, isLocked, decryptedContent, content, t]);
+
+  const handleAcceptTitle = useCallback(() => {
+    if (!noteId || !titleCandidate) return;
+    setLocalTitle(titleCandidate);
+    updateNoteTitle(noteId, titleCandidate);
+    setTitleCandidate(null);
+  }, [noteId, titleCandidate, updateNoteTitle]);
+
+  const handleDismissTitle = useCallback(() => {
+    setTitleCandidate(null);
+  }, []);
+
   // Determine if we should show the password prompt
   const needsPassword = isLocked && !sessionUnlocked;
   // Determine the effective content for the editor
@@ -196,19 +234,72 @@ function Editor({ noteId, title, content, isLocked, onContentChange }: EditorPro
           </div>
         ) : (
           <>
-            {/* Row 1: Title input */}
-            <input
-              type="text"
-              value={localTitle}
-              onChange={handleTitleChange}
-              placeholder={t('Untitled')}
-              className="px-4 py-2 text-xl font-semibold outline-none shrink-0"
-              style={{
-                backgroundColor: 'transparent',
-                color: 'var(--text-primary)',
-                borderBottom: '1px solid var(--border-secondary)',
-              }}
-            />
+            {/* Row 1: Title input + AI suggest button */}
+            <div className="shrink-0" style={{ borderBottom: '1px solid var(--border-secondary)' }}>
+              <div className="flex items-center">
+                <input
+                  type="text"
+                  value={localTitle}
+                  onChange={handleTitleChange}
+                  placeholder={t('Untitled')}
+                  className="flex-1 px-4 py-2 text-xl font-semibold outline-none"
+                  style={{
+                    backgroundColor: 'transparent',
+                    color: 'var(--text-primary)',
+                  }}
+                />
+                <button
+                  onClick={handleSuggestTitle}
+                  disabled={suggestingTitle}
+                  className="mr-3 p-1.5 rounded transition-colors hover:opacity-70 disabled:opacity-50"
+                  style={{ color: suggestError ? '#ef4444' : 'var(--text-tertiary)' }}
+                  title={suggestError ?? t('Suggest title with AI')}
+                >
+                  {suggestingTitle ? (
+                    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" opacity="0.25" />
+                      <path d="M4 12a8 8 0 018-8" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+                    </svg>
+                  ) : (
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                    </svg>
+                  )}
+                </button>
+              </div>
+
+              {titleCandidate && (
+                <div
+                  className="flex items-center gap-2 px-4 py-2"
+                  style={{ backgroundColor: 'var(--bg-tertiary)' }}
+                >
+                  <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: 'var(--text-tertiary)' }}>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 3l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                  </svg>
+                  <span className="flex-1 text-sm truncate" style={{ color: 'var(--text-primary)' }}>
+                    {titleCandidate}
+                  </span>
+                  <button
+                    onClick={handleAcceptTitle}
+                    className="px-2 py-0.5 rounded text-xs text-white transition-colors"
+                    style={{ backgroundColor: '#3b82f6' }}
+                    title={t('Apply')}
+                  >
+                    {t('Apply')}
+                  </button>
+                  <button
+                    onClick={handleDismissTitle}
+                    className="p-1 rounded transition-colors hover:opacity-70"
+                    style={{ color: 'var(--text-tertiary)' }}
+                    title={t('Dismiss')}
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              )}
+            </div>
 
             {/* Row 2: Tags */}
             <TagBar noteId={noteId} />

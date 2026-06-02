@@ -4,19 +4,19 @@
 
 ## 技术栈
 
-| 层面 | 选型 |
-|------|------|
-| 桌面框架 | Electron 40 + Electron Forge + Vite 5 |
-| 前端 | React 18 + TypeScript 5.7 |
-| UI/样式 | Tailwind CSS 3 + CSS Variables |
-| 编辑器 | CodeMirror 6（Markdown 源码 + 实时高亮）|
-| 预览渲染 | marked（GFM + breaks）|
-| 数据库 | better-sqlite3 + Drizzle ORM |
-| 全文搜索 | SQLite FTS5 |
-| 加密 | AES-256-GCM + scrypt |
-| 国际化 | i18next + react-i18next |
-| 导出 | marked → HTML / Markdown 直写 / Electron printToPDF |
-| 包管理 | yarn |
+| 层面     | 选型                                                |
+| -------- | --------------------------------------------------- |
+| 桌面框架 | Electron 40 + Electron Forge + Vite 5               |
+| 前端     | React 18 + TypeScript 5.7                           |
+| UI/样式  | Tailwind CSS 3 + CSS Variables                      |
+| 编辑器   | CodeMirror 6（Markdown 源码 + 实时高亮）            |
+| 预览渲染 | marked（GFM + breaks）                              |
+| 数据库   | better-sqlite3 + Drizzle ORM                        |
+| 全文搜索 | SQLite FTS5                                         |
+| 加密     | AES-256-GCM + scrypt                                |
+| 国际化   | i18next + react-i18next                             |
+| 导出     | marked → HTML / Markdown 直写 / Electron printToPDF |
+| 包管理   | yarn                                                |
 
 ## 功能
 
@@ -24,7 +24,7 @@
 - **Markdown 编辑器** — 基于 CodeMirror 6，源码 + 实时高亮，4 主题适配
 - **3 视图切换** — MD 源码 / Preview 渲染 / Split 左右分屏（带同步滚动），状态持久化
 - **快捷输入** — 工具栏 + 键盘快捷键，覆盖加粗 / 斜体 / 标题 / 引用 / 链接 / 代码 / 列表 / 任务等
-- **表格支持** — 网格选择器插入对齐表格、一键格式化整理列宽
+- **表格支持** — 网格选择器插入对齐表格、一键格式化整理列宽（CJK / 全角字符正确计算显示宽度）
 - **智能行为** — 列表续行、空列表回车退出、括号自动闭合
 - **平台感知** — 工具栏 tooltip 自动显示 `⌘` (Mac) 或 `Ctrl+` (Win/Linux)
 
@@ -57,30 +57,33 @@
 ## 快捷键
 
 ### 编辑器视图
-| 快捷键 | 功能 |
-|--------|------|
-| `Cmd/Ctrl + 1` | MD 源码模式 |
+
+| 快捷键         | 功能             |
+| -------------- | ---------------- |
+| `Cmd/Ctrl + 1` | MD 源码模式      |
 | `Cmd/Ctrl + 2` | Preview 预览模式 |
-| `Cmd/Ctrl + 3` | Split 分屏模式 |
+| `Cmd/Ctrl + 3` | Split 分屏模式   |
 
 ### Markdown 格式
-| 快捷键 | 功能 |
-|--------|------|
-| `Cmd/Ctrl + B` | 粗体 |
-| `Cmd/Ctrl + I` | 斜体 |
-| `Cmd/Ctrl + Shift + S` | 删除线 |
-| `Cmd/Ctrl + 1~6` | 一~六级标题 |
-| `Cmd/Ctrl + K` | 链接 |
-| `Cmd/Ctrl + E` | 行内代码 |
-| `Cmd/Ctrl + Shift + E` | 代码块 |
-| `Cmd/Ctrl + Shift + .` | 引用 |
-| `Cmd/Ctrl + Shift + L` | 无序列表 |
-| `Cmd/Ctrl + Shift + O` | 有序列表 |
-| `Cmd/Ctrl + Shift + T` | 任务列表 |
+
+| 快捷键                 | 功能        |
+| ---------------------- | ----------- |
+| `Cmd/Ctrl + B`         | 粗体        |
+| `Cmd/Ctrl + I`         | 斜体        |
+| `Cmd/Ctrl + Shift + S` | 删除线      |
+| `Cmd/Ctrl + 1~6`       | 一~六级标题 |
+| `Cmd/Ctrl + K`         | 链接        |
+| `Cmd/Ctrl + E`         | 行内代码    |
+| `Cmd/Ctrl + Shift + E` | 代码块      |
+| `Cmd/Ctrl + Shift + .` | 引用        |
+| `Cmd/Ctrl + Shift + L` | 无序列表    |
+| `Cmd/Ctrl + Shift + O` | 有序列表    |
+| `Cmd/Ctrl + Shift + T` | 任务列表    |
 
 ### 应用
-| 快捷键 | 功能 |
-|--------|------|
+
+| 快捷键         | 功能     |
+| -------------- | -------- |
 | `Cmd/Ctrl + S` | 立即保存 |
 
 ## 开发

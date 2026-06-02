@@ -17,6 +17,7 @@ export function exportHtml(filePath: string, title: string, markdown: string): v
     pre code { background: transparent; padding: 0; }
     blockquote { border-left: 4px solid #d1d5db; margin: 1em 0; padding: 0.25em 1em; color: #4b5563; }
     li { margin: 0.25em 0; }
+    p.md-blank { margin: 0; line-height: 1.6; }
     img { max-width: 100%; }
     table { border-collapse: collapse; margin: 1em 0; }
     th, td { border: 1px solid #d1d5db; padding: 0.5em 0.75em; }

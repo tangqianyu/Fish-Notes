@@ -13,6 +13,13 @@ import {
   clearCachedKey,
   isKeyReady,
 } from '../encryption';
+import {
+  getAIConfig,
+  setAIConfig,
+  testClaudeConnection,
+  suggestTitle,
+  type AIConfig,
+} from '../ai';
 
 function getSetting(key: string): string | undefined {
   const rawDb = getRawDatabase();
@@ -166,4 +173,10 @@ export function registerIpcHandlers() {
     images.saveImageFromBuffer(Buffer.from(buffer), mimeType),
   );
   ipcMain.handle('images:pickFile', () => images.pickImageFile());
+
+  // AI
+  ipcMain.handle('ai:getConfig', () => getAIConfig());
+  ipcMain.handle('ai:setConfig', (_event, cfg: AIConfig) => setAIConfig(cfg));
+  ipcMain.handle('ai:testConnection', () => testClaudeConnection());
+  ipcMain.handle('ai:suggestTitle', (_event, content: string) => suggestTitle(content));
 }

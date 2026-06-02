@@ -65,5 +65,17 @@ interface Window {
       saveFromBuffer: (buffer: ArrayBuffer, mimeType: string) => Promise<string>;
       pickFile: () => Promise<string | null>;
     };
+    ai: {
+      getConfig: () => Promise<AIConfig>;
+      setConfig: (cfg: AIConfig) => Promise<void>;
+      testConnection: () => Promise<{ ok: true; reply: string } | { ok: false; error: string }>;
+      suggestTitle: (content: string) => Promise<string>;
+    };
   };
+}
+
+interface AIConfig {
+  token: string;
+  model: string;
+  claudePath?: string;
 }

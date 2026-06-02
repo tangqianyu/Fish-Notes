@@ -73,6 +73,11 @@ body {
   margin: 0.8em 0;
 }
 
+.markdown-preview p.md-blank {
+  margin: 0;
+  line-height: 1.6;
+}
+
 .markdown-preview a {
   color: var(--text-active);
   text-decoration: underline;

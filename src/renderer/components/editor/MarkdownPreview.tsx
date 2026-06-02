@@ -8,10 +8,49 @@ interface MarkdownPreviewProps {
 
 const EXTERNAL_LINK_RE = /^(https?|mailto|tel):/i;
 
+// Standard Markdown collapses 2+ consecutive blank lines into a single paragraph
+// break. Users typing extra Enter expect that vertical whitespace to show up in
+// preview/export, so we inject visible "&nbsp;" paragraphs for each blank beyond
+// the first. Code fences are skipped so multi-line code blocks keep their blanks.
+function preserveBlankLines(md: string): string {
+  const lines = md.split('\n');
+  const result: string[] = [];
+  let consecutiveBlank = 0;
+  let inCodeBlock = false;
+
+  for (const line of lines) {
+    if (/^\s*```/.test(line)) {
+      inCodeBlock = !inCodeBlock;
+      result.push(line);
+      consecutiveBlank = 0;
+      continue;
+    }
+    if (inCodeBlock) {
+      result.push(line);
+      consecutiveBlank = 0;
+      continue;
+    }
+    if (line.trim() === '') {
+      consecutiveBlank++;
+      if (consecutiveBlank === 1) {
+        result.push('');
+      } else {
+        result.push('&nbsp;');
+        result.push('');
+      }
+    } else {
+      consecutiveBlank = 0;
+      result.push(line);
+    }
+  }
+
+  return result.join('\n');
+}
+
 function renderMarkdown(md: string): string {
   if (!md) return '';
   const tagPlaceholders: string[] = [];
-  const processed = md.replace(
+  const processed = preserveBlankLines(md).replace(
     /(?<=\s|^)#([\p{L}\p{N}_][\p{L}\p{N}_/]*)/gu,
     (match) => {
       const idx = tagPlaceholders.length;
@@ -34,6 +73,10 @@ function renderMarkdown(md: string): string {
     /<a (?![^>]*\btarget=)/g,
     '<a target="_blank" rel="noopener noreferrer" ',
   );
+
+  // Tag blank-line paragraphs (the &nbsp; rows we injected) so CSS can collapse
+  // their margins and match source's per-line spacing.
+  html = html.replace(/<p>\s*&nbsp;\s*<\/p>/g, '<p class="md-blank">&nbsp;</p>');
 
   return html;
 }

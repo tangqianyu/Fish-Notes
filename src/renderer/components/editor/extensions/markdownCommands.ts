@@ -202,6 +202,43 @@ function parseTableLine(text: string): string[] | null {
   return t.split('|').map((c) => c.trim());
 }
 
+// CJK ideographs, Hangul, Hiragana/Katakana, fullwidth forms, common emoji —
+// all occupy 2 column-widths in a monospace font.
+function isWide(code: number): boolean {
+  return (
+    (code >= 0x1100 && code <= 0x115f) ||
+    (code >= 0x2e80 && code <= 0x303e) ||
+    (code >= 0x3041 && code <= 0x33ff) ||
+    (code >= 0x3400 && code <= 0x4dbf) ||
+    (code >= 0x4e00 && code <= 0x9fff) ||
+    (code >= 0xa000 && code <= 0xa4cf) ||
+    (code >= 0xac00 && code <= 0xd7a3) ||
+    (code >= 0xf900 && code <= 0xfaff) ||
+    (code >= 0xfe30 && code <= 0xfe4f) ||
+    (code >= 0xff00 && code <= 0xff60) ||
+    (code >= 0xffe0 && code <= 0xffe6) ||
+    (code >= 0x1f300 && code <= 0x1f9ff) ||
+    (code >= 0x20000 && code <= 0x2fffd) ||
+    (code >= 0x30000 && code <= 0x3fffd)
+  );
+}
+
+function displayWidth(s: string): number {
+  let w = 0;
+  for (const char of s) {
+    const code = char.codePointAt(0);
+    if (code === undefined) continue;
+    w += isWide(code) ? 2 : 1;
+  }
+  return w;
+}
+
+function padEndDisplay(s: string, width: number): string {
+  const cur = displayWidth(s);
+  if (cur >= width) return s;
+  return s + ' '.repeat(width - cur);
+}
+
 function buildTableText(rows: string[][], separatorIndex: number): string {
   const numCols = Math.max(...rows.map((r) => r.length));
   for (const row of rows) {
@@ -212,7 +249,7 @@ function buildTableText(rows: string[][], separatorIndex: number): string {
   for (let r = 0; r < rows.length; r++) {
     if (r === separatorIndex) continue;
     for (let c = 0; c < numCols; c++) {
-      widths[c] = Math.max(widths[c], rows[r][c].length);
+      widths[c] = Math.max(widths[c], displayWidth(rows[r][c]));
     }
   }
 
@@ -235,7 +272,7 @@ function buildTableText(rows: string[][], separatorIndex: number): string {
           ' |'
         );
       }
-      return '| ' + widths.map((w, i) => row[i].padEnd(w)).join(' | ') + ' |';
+      return '| ' + widths.map((w, i) => padEndDisplay(row[i], w)).join(' | ') + ' |';
     })
     .join('\n');
 }

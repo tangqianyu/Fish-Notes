@@ -51,4 +51,11 @@ contextBridge.exposeInMainWorld('api', {
       ipcRenderer.invoke('images:saveFromBuffer', buffer, mimeType),
     pickFile: () => ipcRenderer.invoke('images:pickFile'),
   },
+  ai: {
+    getConfig: () => ipcRenderer.invoke('ai:getConfig'),
+    setConfig: (cfg: { token: string; model: string; claudePath?: string }) =>
+      ipcRenderer.invoke('ai:setConfig', cfg),
+    testConnection: () => ipcRenderer.invoke('ai:testConnection'),
+    suggestTitle: (content: string) => ipcRenderer.invoke('ai:suggestTitle', content),
+  },
 });

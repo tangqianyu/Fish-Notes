@@ -160,3 +160,31 @@ ${plain}`;
     .replace(/^标题[:：]\s*/i, '')
     .trim();
 }
+
+/**
+ * 润色一段（用户选中的）Markdown 文字。保留 Markdown 语法和原意，只优化表达。
+ */
+export async function polishText(text: string): Promise<string> {
+  if (!text.trim()) throw new Error('选中的文本为空');
+
+  const prompt = `请润色下面这段文字。严格要求：
+- 保持原意、语气、视角不变
+- 与原文使用相同的语言（中文还是中文，英文还是英文）
+- 完整保留所有 Markdown 语法（**粗体**、*斜体*、\`代码\`、列表标记、链接、图片、标题井号等都不能动）
+- 不要增加或删减信息，只让表达更通顺、自然
+- 只返回润色后的文本本身，不要添加任何解释、引号、"润色后："这样的前缀
+
+原文：
+${text}`;
+
+  const raw = await runClaude(prompt, {
+    systemPrompt:
+      '你是专业的文字编辑，擅长润色文章。严格只输出润色后的文本本身，不输出任何解释或包装。',
+  });
+
+  // 去掉模型有时仍会添加的代码围栏 / 引号
+  return raw
+    .replace(/^```(?:markdown|md)?\s*\n?/i, '')
+    .replace(/\n?\s*```$/i, '')
+    .trim();
+}

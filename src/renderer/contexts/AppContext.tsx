@@ -1,4 +1,12 @@
-import { createContext, useContext, useReducer, useEffect, useCallback, useState, type ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  useReducer,
+  useEffect,
+  useCallback,
+  useState,
+  type ReactNode,
+} from 'react';
 import { stripMarkdown } from '../utils/mdUtils';
 
 type ViewMode = 'all' | 'trash' | 'tag';
@@ -37,9 +45,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
     case 'UPDATE_NOTE':
       return {
         ...state,
-        notes: state.notes.map((n) =>
-          n.id === action.id ? { ...n, ...action.data } : n,
-        ),
+        notes: state.notes.map((n) => (n.id === action.id ? { ...n, ...action.data } : n)),
       };
     case 'REMOVE_NOTE': {
       const filtered = state.notes.filter((n) => n.id !== action.id);
@@ -47,9 +53,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
         ...state,
         notes: filtered,
         selectedNoteId:
-          state.selectedNoteId === action.id
-            ? filtered[0]?.id ?? null
-            : state.selectedNoteId,
+          state.selectedNoteId === action.id ? (filtered[0]?.id ?? null) : state.selectedNoteId,
       };
     }
     case 'SET_VIEW_MODE':
@@ -161,30 +165,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'SELECT_NOTE', id });
   }, []);
 
-  const updateNoteTitle = useCallback(
-    (id: string, title: string) => {
-      window.api.notes.update(id, { title });
-      dispatch({
-        type: 'UPDATE_NOTE',
-        id,
-        data: { title, updatedAt: new Date().toISOString() },
-      });
-    },
-    [],
-  );
+  const updateNoteTitle = useCallback((id: string, title: string) => {
+    window.api.notes.update(id, { title });
+    dispatch({
+      type: 'UPDATE_NOTE',
+      id,
+      data: { title, updatedAt: new Date().toISOString() },
+    });
+  }, []);
 
-  const updateNoteContent = useCallback(
-    (id: string, content: string) => {
-      const contentText = stripMarkdown(content);
-      window.api.notes.update(id, { content, contentText });
-      dispatch({
-        type: 'UPDATE_NOTE',
-        id,
-        data: { content, updatedAt: new Date().toISOString() },
-      });
-    },
-    [],
-  );
+  const updateNoteContent = useCallback((id: string, content: string) => {
+    const contentText = stripMarkdown(content);
+    window.api.notes.update(id, { content, contentText });
+    dispatch({
+      type: 'UPDATE_NOTE',
+      id,
+      data: { content, updatedAt: new Date().toISOString() },
+    });
+  }, []);
 
   const addNoteTag = useCallback(
     async (noteId: string, tagName: string) => {
@@ -280,35 +278,26 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [refreshNotes],
   );
 
-  const lockNote = useCallback(
-    async (id: string) => {
-      await window.api.notes.lock(id);
-      dispatch({ type: 'UPDATE_NOTE', id, data: { isLocked: true, content: '' } });
-    },
-    [],
-  );
+  const lockNote = useCallback(async (id: string) => {
+    await window.api.notes.lock(id);
+    dispatch({ type: 'UPDATE_NOTE', id, data: { isLocked: true, content: '' } });
+  }, []);
 
-  const unlockNote = useCallback(
-    async (id: string) => {
-      await window.api.notes.unlock(id);
-      const note = await window.api.notes.get(id);
-      if (note) {
-        dispatch({ type: 'UPDATE_NOTE', id, data: { isLocked: false, content: note.content } });
-      }
-    },
-    [],
-  );
+  const unlockNote = useCallback(async (id: string) => {
+    await window.api.notes.unlock(id);
+    const note = await window.api.notes.get(id);
+    if (note) {
+      dispatch({ type: 'UPDATE_NOTE', id, data: { isLocked: false, content: note.content } });
+    }
+  }, []);
 
-  const verifyPassword = useCallback(
-    async (password: string) => {
-      const ok = await window.api.encryption.verifyPassword(password);
-      if (ok) {
-        setSessionUnlocked(true);
-      }
-      return ok;
-    },
-    [],
-  );
+  const verifyPassword = useCallback(async (password: string) => {
+    const ok = await window.api.encryption.verifyPassword(password);
+    if (ok) {
+      setSessionUnlocked(true);
+    }
+    return ok;
+  }, []);
 
   const lockAllNotes = useCallback(async () => {
     await window.api.encryption.lockAll();

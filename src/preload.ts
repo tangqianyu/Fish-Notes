@@ -57,5 +57,6 @@ contextBridge.exposeInMainWorld('api', {
       ipcRenderer.invoke('ai:setConfig', cfg),
     testConnection: () => ipcRenderer.invoke('ai:testConnection'),
     suggestTitle: (content: string) => ipcRenderer.invoke('ai:suggestTitle', content),
+    polishText: (text: string) => ipcRenderer.invoke('ai:polishText', text),
   },
 });

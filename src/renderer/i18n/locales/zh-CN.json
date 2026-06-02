@@ -111,5 +111,14 @@
   "Suggest title with AI": "用 AI 生成标题",
   "Note is empty": "笔记内容为空",
   "Apply": "应用",
-  "Dismiss": "忽略"
+  "Dismiss": "忽略",
+  "AI polish": "AI 润色",
+  "AI Polish Suggestion": "AI 润色建议",
+  "Polishing...": "润色中…",
+  "Polish failed": "润色失败",
+  "Apply polish": "应用润色",
+  "Reject": "拒绝",
+  "Retry": "重试",
+  "Unified": "统一",
+  "Side by side": "并排"
 }

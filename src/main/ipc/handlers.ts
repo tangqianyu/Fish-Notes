@@ -18,6 +18,7 @@ import {
   setAIConfig,
   testClaudeConnection,
   suggestTitle,
+  polishText,
   type AIConfig,
 } from '../ai';
 
@@ -179,4 +180,5 @@ export function registerIpcHandlers() {
   ipcMain.handle('ai:setConfig', (_event, cfg: AIConfig) => setAIConfig(cfg));
   ipcMain.handle('ai:testConnection', () => testClaudeConnection());
   ipcMain.handle('ai:suggestTitle', (_event, content: string) => suggestTitle(content));
+  ipcMain.handle('ai:polishText', (_event, text: string) => polishText(text));
 }

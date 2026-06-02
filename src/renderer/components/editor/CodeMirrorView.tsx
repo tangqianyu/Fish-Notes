@@ -10,6 +10,7 @@ import { searchKeymap, highlightSelectionMatches } from '@codemirror/search';
 import { createEditorTheme, type AppTheme } from './extensions/themes';
 import { smartListKeymap } from './extensions/smartTyping';
 import { imageHandling } from './extensions/imageHandling';
+import { polishBubbleExtension, type PolishSelectionInfo } from './extensions/polishBubble';
 import {
   toggleBold,
   toggleItalic,
@@ -29,22 +30,27 @@ export interface CodeMirrorHandle {
   focus: () => void;
 }
 
+export type { PolishSelectionInfo };
+
 interface CodeMirrorViewProps {
   defaultValue: string;
   onChange: (value: string) => void;
   onSave?: () => void;
+  onPolishSelection?: (sel: PolishSelectionInfo | null) => void;
   theme: AppTheme;
   className?: string;
 }
 
 const CodeMirrorView = forwardRef<CodeMirrorHandle, CodeMirrorViewProps>(
-  ({ defaultValue, onChange, onSave, theme, className }, ref) => {
+  ({ defaultValue, onChange, onSave, onPolishSelection, theme, className }, ref) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const viewRef = useRef<EditorView | null>(null);
     const onChangeRef = useRef(onChange);
     const onSaveRef = useRef(onSave);
+    const onPolishSelectionRef = useRef(onPolishSelection);
     onChangeRef.current = onChange;
     onSaveRef.current = onSave;
+    onPolishSelectionRef.current = onPolishSelection;
 
     useImperativeHandle(
       ref,
@@ -113,6 +119,7 @@ const CodeMirrorView = forwardRef<CodeMirrorHandle, CodeMirrorViewProps>(
             onChangeRef.current(update.state.doc.toString());
           }
         }),
+        polishBubbleExtension((sel) => onPolishSelectionRef.current?.(sel)),
       ];
 
       const state = EditorState.create({

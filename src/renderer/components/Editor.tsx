@@ -85,7 +85,7 @@ function Editor({ noteId, title, content, isLocked, onContentChange }: EditorPro
       setLocalTitle(newTitle);
       if (!noteId) return;
       saveTitle(() => {
-        updateNoteTitle(noteId, newTitle || t('Untitled'));
+        updateNoteTitle(noteId, newTitle);
       });
     },
     [noteId, saveTitle, updateNoteTitle],

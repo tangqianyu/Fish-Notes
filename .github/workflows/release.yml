@@ -1,0 +1,60 @@
+name: Release
+
+# 打 tag（如 v1.0.1）时触发，三平台并行打包并上传到 GitHub Releases。
+# 手动发版步骤见 README「发布新版本」。
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build (${{ matrix.platform }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            platform: macOS
+          - os: windows-latest
+            platform: Windows
+          - os: ubuntu-latest
+            platform: Linux
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: yarn
+
+      # maker-rpm 需要 rpmbuild；ubuntu runner 默认没装（deb 用的 dpkg/fakeroot 已自带）
+      - name: Install RPM tooling (Linux)
+        if: matrix.platform == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y rpm
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Build distributables
+        run: yarn make
+
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          # 三个平台的 job 各自把自己的产物追加到同一个 tag 对应的 Release
+          fail_on_unmatched_files: false
+          generate_release_notes: true
+          files: |
+            out/make/**/*.dmg
+            out/make/**/*.zip
+            out/make/**/*.exe
+            out/make/**/*.nupkg
+            out/make/**/*.deb
+            out/make/**/*.rpm

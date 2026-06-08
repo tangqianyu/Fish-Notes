@@ -11,6 +11,14 @@ if (started) {
   app.quit();
 }
 
+// Dev-only: isolate all app data into a separate profile (DB + images + settings).
+// Lets you run a throwaway demo profile for screenshots without touching real data:
+//   FISH_NOTES_USER_DATA=/tmp/fish-notes-demo yarn start
+// Has no effect in normal/production runs (env var unset).
+if (process.env.FISH_NOTES_USER_DATA) {
+  app.setPath('userData', process.env.FISH_NOTES_USER_DATA);
+}
+
 // Register fish-image:// scheme before app is ready
 protocol.registerSchemesAsPrivileged([
   {

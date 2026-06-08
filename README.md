@@ -1,174 +1,221 @@
-# Fish Notes
+<div align="center">
 
-一款类似 [Bear](https://bear.app/zh/) 的桌面笔记应用，使用 React + Electron 构建。
+# 🐟 Fish Notes
 
-## 技术栈
+A [Bear](https://bear.app)-like desktop Markdown note-taking app · React + Electron + TypeScript
 
-| 层面     | 选型                                                |
-| -------- | --------------------------------------------------- |
-| 桌面框架 | Electron 40 + Electron Forge + Vite 5               |
-| 前端     | React 18 + TypeScript 5.7                           |
-| UI/样式  | Tailwind CSS 3 + CSS Variables                      |
-| 编辑器   | CodeMirror 6（Markdown 源码 + 实时高亮）            |
-| 预览渲染 | marked（GFM + breaks）                              |
-| 数据库   | better-sqlite3 + Drizzle ORM                        |
-| 全文搜索 | SQLite FTS5                                         |
-| 加密     | AES-256-GCM + scrypt                                |
-| 国际化   | i18next + react-i18next                             |
-| 导出     | marked → HTML / Markdown 直写 / Electron printToPDF |
-| 包管理   | yarn                                                |
+Local-first · Full-text search · End-to-end encryption · Multiple themes · Tag organization
 
-## 功能
+English · [简体中文](./README.zh-CN.md)
 
-### 编辑
+[![Release](https://img.shields.io/github/v/release/tangqianyu/Fish-Notes?label=release&logo=github)](https://github.com/tangqianyu/Fish-Notes/releases/latest)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
+[![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey.svg)](https://github.com/tangqianyu/Fish-Notes/releases/latest)
 
-- **Markdown 编辑器** — 基于 CodeMirror 6，源码 + 实时高亮，4 主题适配
-- **3 视图切换** — MD 源码 / Preview 渲染 / Split 左右分屏（带同步滚动），状态持久化
-- **快捷输入** — 工具栏 + 键盘快捷键，覆盖加粗 / 斜体 / 标题 / 引用 / 链接 / 代码 / 列表 / 任务等
-- **表格支持** — 网格选择器插入对齐表格、一键格式化整理列宽（CJK / 全角字符正确计算显示宽度）
-- **智能行为** — 列表续行、空列表回车退出、括号自动闭合
-- **平台感知** — 工具栏 tooltip 自动显示 `⌘` (Mac) 或 `Ctrl+` (Win/Linux)
+![Fish Notes](./docs/screenshots/hero.png)
 
-### 组织
+</div>
 
-- **标签系统** — 通过 TagBar 直接管理，支持嵌套标签 `#parent/child`，侧边栏标签树展示
-- **全文搜索** — 基于 SQLite FTS5，纯文本索引（去 Markdown 语法）
-- **回收站** — 软删除、恢复、永久删除
-- **置顶** — 笔记和标签都支持置顶
+## Download
 
-### 体验
+Grab the installer for your platform from the **[Releases page](https://github.com/tangqianyu/Fish-Notes/releases/latest)**:
 
-- **多主题** — Light / Dark / Solarized / Anime 四套主题
-- **多语言** — 中文 / 英文（默认中文）
-- **自动保存** — 500ms 防抖，Cmd+S 立即保存
-- **三栏布局** — 侧边栏 | 笔记列表 | 编辑器，可拖拽调整宽度
-- **macOS 原生窗口** — 隐藏标题栏，traffic lights 集成
-- **外链处理** — 预览中点击链接用系统默认浏览器打开
+| Platform | File                            |
+| -------- | ------------------------------- |
+| macOS    | `.dmg` (Apple Silicon / Intel)  |
+| Windows  | `Setup.exe`                     |
+| Linux    | `.deb` / `.rpm`                 |
 
-### 安全
+> The macOS build is unsigned. If you see "cannot verify the developer" on first launch, right-click the app icon and choose **Open**, or allow it under **System Settings → Privacy & Security**.
 
-- **端到端加密** — AES-256-GCM 加密笔记内容，scrypt 派生密钥
-- **会话锁定** — 密钥仅缓存在内存，锁定即清除
-- **加密笔记不进 FTS** — 不被搜索命中
+## Screenshots
 
-### 媒体
+|             Editor (split view)            |               Themes                |
+| :----------------------------------------: | :---------------------------------: |
+| ![Editor](./docs/screenshots/editor.png)  | ![Themes](./docs/screenshots/themes.png) |
 
-- **图片支持** — 拖拽、粘贴、`![]()` 工具栏按钮三种方式
-- **本地存储** — 自定义 `fish-image://` 协议，UUID 命名
+## Tech Stack
 
-### 导出
+| Layer            | Choice                                              |
+| ---------------- | --------------------------------------------------- |
+| Desktop          | Electron 40 + Electron Forge + Vite 5               |
+| Frontend         | React 18 + TypeScript 5.7                           |
+| UI / Styling     | Tailwind CSS 3 + CSS Variables                      |
+| Editor           | CodeMirror 6 (Markdown source + live highlighting)  |
+| Preview          | marked (GFM + breaks)                               |
+| Database         | better-sqlite3 + Drizzle ORM                        |
+| Full-text search | SQLite FTS5                                         |
+| Encryption       | AES-256-GCM + scrypt                                |
+| i18n             | i18next + react-i18next                             |
+| Export           | marked → HTML / direct Markdown / Electron printToPDF |
+| Package manager  | yarn                                                |
 
-- **多格式** — Markdown (.md) / HTML (.html) / PDF (.pdf)
+## Features
 
-## 快捷键
+### Editing
 
-### 编辑器视图
+- **Markdown editor** — built on CodeMirror 6, source view with live highlighting, themed
+- **3 view modes** — MD source / Preview / Split (side-by-side with synced scrolling), state persisted
+- **Quick input** — toolbar + keyboard shortcuts for bold / italic / headings / quote / link / code / lists / tasks
+- **Tables** — grid picker to insert aligned tables, one-click reformat to align column widths (CJK / full-width aware)
+- **Smart behaviors** — list continuation, exit empty list on Enter, auto-closing brackets
+- **Platform-aware** — toolbar tooltips show `⌘` (Mac) or `Ctrl+` (Win/Linux)
 
-| 快捷键         | 功能             |
-| -------------- | ---------------- |
-| `Cmd/Ctrl + 1` | MD 源码模式      |
-| `Cmd/Ctrl + 2` | Preview 预览模式 |
-| `Cmd/Ctrl + 3` | Split 分屏模式   |
+### Organization
 
-### Markdown 格式
+- **Tags** — managed directly via the TagBar, nested tags `#parent/child`, tag tree in the sidebar
+- **Full-text search** — powered by SQLite FTS5, plain-text index (Markdown syntax stripped)
+- **Trash** — soft delete, restore, permanently delete
+- **Pinning** — both notes and tags can be pinned
 
-| 快捷键                 | 功能        |
-| ---------------------- | ----------- |
-| `Cmd/Ctrl + B`         | 粗体        |
-| `Cmd/Ctrl + I`         | 斜体        |
-| `Cmd/Ctrl + Shift + S` | 删除线      |
-| `Cmd/Ctrl + 1~6`       | 一~六级标题 |
-| `Cmd/Ctrl + K`         | 链接        |
-| `Cmd/Ctrl + E`         | 行内代码    |
-| `Cmd/Ctrl + Shift + E` | 代码块      |
-| `Cmd/Ctrl + Shift + .` | 引用        |
-| `Cmd/Ctrl + Shift + L` | 无序列表    |
-| `Cmd/Ctrl + Shift + O` | 有序列表    |
-| `Cmd/Ctrl + Shift + T` | 任务列表    |
+### Experience
 
-### 应用
+- **Themes** — Light / Dark / Solarized / Anime
+- **Multi-language** — English / Chinese
+- **Auto-save** — 500ms debounce, Cmd+S to save immediately
+- **Three-pane layout** — sidebar | note list | editor, with draggable widths
+- **Native macOS window** — hidden title bar, integrated traffic lights
+- **External links** — clicking a link in preview opens it in the system browser
 
-| 快捷键         | 功能     |
-| -------------- | -------- |
-| `Cmd/Ctrl + S` | 立即保存 |
+### Security
 
-## 开发
+- **End-to-end encryption** — note content encrypted with AES-256-GCM, key derived via scrypt
+- **Session lock** — the key lives only in memory and is cleared on lock
+- **Encrypted notes stay out of FTS** — not surfaced in search
+
+### Media
+
+- **Images** — drag-and-drop, paste, or the `![]()` toolbar button
+- **Local storage** — custom `fish-image://` protocol, UUID-named files
+
+### Export
+
+- **Multiple formats** — Markdown (.md) / HTML (.html) / PDF (.pdf)
+
+## Keyboard Shortcuts
+
+### Editor views
+
+| Shortcut       | Action       |
+| -------------- | ------------ |
+| `Cmd/Ctrl + 1` | MD source    |
+| `Cmd/Ctrl + 2` | Preview      |
+| `Cmd/Ctrl + 3` | Split        |
+
+### Markdown formatting
+
+| Shortcut               | Action            |
+| ---------------------- | ----------------- |
+| `Cmd/Ctrl + B`         | Bold              |
+| `Cmd/Ctrl + I`         | Italic            |
+| `Cmd/Ctrl + Shift + S` | Strikethrough     |
+| `Cmd/Ctrl + 1~6`       | Heading 1–6       |
+| `Cmd/Ctrl + K`         | Link              |
+| `Cmd/Ctrl + E`         | Inline code       |
+| `Cmd/Ctrl + Shift + E` | Code block        |
+| `Cmd/Ctrl + Shift + .` | Blockquote        |
+| `Cmd/Ctrl + Shift + L` | Bullet list       |
+| `Cmd/Ctrl + Shift + O` | Numbered list     |
+| `Cmd/Ctrl + Shift + T` | Task list         |
+
+### App
+
+| Shortcut       | Action     |
+| -------------- | ---------- |
+| `Cmd/Ctrl + S` | Save now   |
+
+## Development
 
 ```bash
-# 安装依赖
+# Install dependencies
 yarn install
 
-# 启动开发模式
+# Start dev mode
 yarn start
 
-# ESLint 检查
+# Lint
 yarn run lint
 
-# Prettier 格式化
+# Format
 yarn run format
 
-# 类型检查
+# Type-check
 npx tsc --noEmit
 
-# 打包应用
+# Build the app
 yarn make
 ```
 
-## 项目结构
+## Releasing
+
+Building and uploading are handled by GitHub Actions ([`.github/workflows/release.yml`](./.github/workflows/release.yml)): pushing a `v*` tag triggers parallel builds for macOS / Windows / Linux, and the artifacts are uploaded to the matching Release automatically.
+
+```bash
+# 1. Bump the version in package.json and commit
+# 2. Tag and push
+git tag v1.0.1
+git push origin v1.0.1
+```
+
+A few minutes later, find the auto-generated release and installers on the [Releases page](https://github.com/tangqianyu/Fish-Notes/releases).
+
+> macOS artifacts are not code-signed / notarized. To remove the "cannot verify the developer" prompt, configure an Apple Developer certificate and add a signing step to the workflow.
+
+## Project Structure
 
 ```
 src/
-├── main.ts                              # Electron 主进程入口
-├── preload.ts                           # IPC 桥接，暴露 window.api
+├── main.ts                              # Electron main process entry
+├── preload.ts                           # IPC bridge, exposes window.api
 ├── main/
-│   ├── database/                        # SQLite 数据层（schema, CRUD, FTS5, 迁移）
-│   ├── ipc/                             # IPC 处理器（笔记/标签/搜索/加密/导出）
-│   ├── export/                          # 导出模块（Markdown/HTML/PDF）
-│   ├── markdown.ts                      # 共享 MD 工具（marked、turndown、strip、detect）
+│   ├── database/                        # SQLite data layer (schema, CRUD, FTS5, migrations)
+│   ├── ipc/                             # IPC handlers (notes/tags/search/encryption/export)
+│   ├── export/                          # Export modules (Markdown/HTML/PDF)
+│   ├── markdown.ts                      # Shared MD utils (marked, turndown, strip, detect)
 │   ├── encryption.ts                    # AES-256-GCM + scrypt
-│   └── images.ts                        # fish-image:// 协议图片存储
+│   └── images.ts                        # fish-image:// protocol image storage
 └── renderer/
-    ├── main.tsx                         # React 入口
-    ├── App.tsx                          # 根组件 + providers
-    ├── index.css                        # Tailwind + CodeMirror + Markdown 预览样式
+    ├── main.tsx                         # React entry
+    ├── App.tsx                          # Root component + providers
+    ├── index.css                        # Tailwind + CodeMirror + Markdown preview styles
     ├── components/
-    │   ├── Layout.tsx                   # 三栏布局 + 快捷键
-    │   ├── Sidebar.tsx                  # 侧边栏（导航 + 标签树）
-    │   ├── NoteList.tsx                 # 笔记列表
-    │   ├── Editor.tsx                   # 编辑器容器 + 导出菜单
-    │   ├── TagBar.tsx                   # 标签管理栏
-    │   ├── TitleBar.tsx                 # macOS 拖拽区域
-    │   ├── SearchBar.tsx                # 全文搜索弹窗
-    │   ├── PasswordPrompt.tsx           # 密码输入弹窗
-    │   ├── Settings.tsx                 # 主题 + 加密设置
-    │   ├── Tooltip.tsx                  # Portal-based tooltip，支持 kbd 快捷键
+    │   ├── Layout.tsx                   # Three-pane layout + shortcuts
+    │   ├── Sidebar.tsx                  # Sidebar (navigation + tag tree)
+    │   ├── NoteList.tsx                 # Note list
+    │   ├── Editor.tsx                   # Editor container + export menu
+    │   ├── TagBar.tsx                   # Tag management bar
+    │   ├── TitleBar.tsx                 # macOS drag region
+    │   ├── SearchBar.tsx                # Full-text search popup
+    │   ├── PasswordPrompt.tsx           # Password prompt
+    │   ├── Settings.tsx                 # Theme + encryption settings
+    │   ├── Tooltip.tsx                  # Portal-based tooltip with kbd shortcuts
     │   └── editor/
-    │       ├── MarkdownEditor.tsx       # 3 Tab 切换主入口
-    │       ├── CodeMirrorView.tsx       # CodeMirror 6 封装
-    │       ├── MarkdownPreview.tsx      # marked 渲染 + 外链处理
-    │       ├── EditorToolbar.tsx        # 工具栏（i18n + 平台快捷键）
-    │       ├── TablePicker.tsx          # 8×8 表格网格选择器
-    │       └── extensions/              # CodeMirror 扩展（commands / smart / image / themes）
-    ├── contexts/                        # React Context（AppContext, ThemeContext）
-    ├── hooks/                           # 自定义 Hooks（useAutoSave）
-    ├── utils/                           # 工具函数（tagParser, mdUtils）
-    ├── i18n/                            # i18n 配置 + 翻译文件
-    ├── types/                           # TypeScript 类型定义
-    └── styles/themes/                   # 主题 CSS 变量（4 个主题）
+    │       ├── MarkdownEditor.tsx       # 3-tab switching entry
+    │       ├── CodeMirrorView.tsx       # CodeMirror 6 wrapper
+    │       ├── MarkdownPreview.tsx      # marked rendering + external links
+    │       ├── EditorToolbar.tsx        # Toolbar (i18n + platform shortcuts)
+    │       ├── TablePicker.tsx          # 8×8 table grid picker
+    │       └── extensions/              # CodeMirror extensions (commands / smart / image / themes)
+    ├── contexts/                        # React Context (AppContext, ThemeContext)
+    ├── hooks/                           # Custom hooks (useAutoSave)
+    ├── utils/                           # Utilities (tagParser, mdUtils)
+    ├── i18n/                            # i18n config + translation files
+    ├── types/                           # TypeScript type definitions
+    └── styles/themes/                   # Theme CSS variables (4 themes)
 ```
 
-## 数据库
+## Database
 
-SQLite 文件位置：`~/Library/Application Support/Fish Notes/`（macOS）
+SQLite file location: `~/Library/Application Support/Fish Notes/` (macOS)
 
-**四张表**：
+**Four tables:**
 
-- `notes` — id, title, content (Markdown), content_text (FTS 纯文本), content_format, content_html_legacy (HTML→MD 迁移备份), created_at, updated_at, is_trashed, is_pinned, is_locked
+- `notes` — id, title, content (Markdown), content_text (plain text for FTS), content_format, content_html_legacy (HTML→MD migration backup), created_at, updated_at, is_trashed, is_pinned, is_locked
 - `tags` — id, name (unique), parent_id, is_pinned
-- `note_tags` — note_id, tag_id（多对多）
-- `app_settings` — key, value（密码哈希、盐值等）
+- `note_tags` — note_id, tag_id (many-to-many)
+- `app_settings` — key, value (password hash, salt, etc.)
 
-启动时自动执行 schema 迁移（`database/index.ts`），含历史的 md ↔ html 双向迁移。
+Schema migrations run on startup (`database/index.ts`), including the historical md ↔ html bidirectional migration.
 
 ## License
 

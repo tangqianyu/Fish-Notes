@@ -10,7 +10,7 @@
 
 [![Release](https://img.shields.io/github/v/release/tangqianyu/Fish-Notes?label=下载&logo=github)](https://github.com/tangqianyu/Fish-Notes/releases/latest)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
-[![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey.svg)](https://github.com/tangqianyu/Fish-Notes/releases/latest)
+[![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows-lightgrey.svg)](https://github.com/tangqianyu/Fish-Notes/releases/latest)
 
 ![Fish Notes](./docs/screenshots/hero.png)
 
@@ -24,7 +24,6 @@
 | ------- | --------------------------------- |
 | macOS   | `.dmg`（Apple Silicon / Intel）   |
 | Windows | `Setup.exe`                       |
-| Linux   | `.deb` / `.rpm`                   |
 
 > macOS 应用未签名，首次打开若提示「无法验证开发者」，请右键点击应用图标选择「打开」，或在「系统设置 → 隐私与安全性」中放行。
 
@@ -148,7 +147,7 @@ yarn make
 
 ## 发布新版本
 
-打包和上传由 GitHub Actions（[`.github/workflows/release.yml`](./.github/workflows/release.yml)）自动完成：推送一个 `v*` 标签即触发 macOS / Windows / Linux 三平台并行打包，产物自动上传到对应的 Release。
+打包和上传由 GitHub Actions（[`.github/workflows/release.yml`](./.github/workflows/release.yml)）自动完成：推送一个 `v*` 标签即触发 macOS / Windows 两平台并行打包，产物自动上传到对应的 Release。
 
 ```bash
 # 1. 更新 package.json 里的 version，提交

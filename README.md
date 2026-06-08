@@ -10,7 +10,7 @@ English · [简体中文](./README.zh-CN.md)
 
 [![Release](https://img.shields.io/github/v/release/tangqianyu/Fish-Notes?label=release&logo=github)](https://github.com/tangqianyu/Fish-Notes/releases/latest)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
-[![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey.svg)](https://github.com/tangqianyu/Fish-Notes/releases/latest)
+[![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows-lightgrey.svg)](https://github.com/tangqianyu/Fish-Notes/releases/latest)
 
 ![Fish Notes](./docs/screenshots/hero.png)
 
@@ -24,7 +24,6 @@ Grab the installer for your platform from the **[Releases page](https://github.c
 | -------- | ------------------------------- |
 | macOS    | `.dmg` (Apple Silicon / Intel)  |
 | Windows  | `Setup.exe`                     |
-| Linux    | `.deb` / `.rpm`                 |
 
 > The macOS build is unsigned. If you see "cannot verify the developer" on first launch, right-click the app icon and choose **Open**, or allow it under **System Settings → Privacy & Security**.
 
@@ -148,7 +147,7 @@ yarn make
 
 ## Releasing
 
-Building and uploading are handled by GitHub Actions ([`.github/workflows/release.yml`](./.github/workflows/release.yml)): pushing a `v*` tag triggers parallel builds for macOS / Windows / Linux, and the artifacts are uploaded to the matching Release automatically.
+Building and uploading are handled by GitHub Actions ([`.github/workflows/release.yml`](./.github/workflows/release.yml)): pushing a `v*` tag triggers parallel builds for macOS / Windows, and the artifacts are uploaded to the matching Release automatically.
 
 ```bash
 # 1. Bump the version in package.json and commit

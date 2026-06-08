@@ -21,8 +21,6 @@ jobs:
             platform: macOS
           - os: windows-latest
             platform: Windows
-          - os: ubuntu-latest
-            platform: Linux
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
@@ -33,11 +31,6 @@ jobs:
         with:
           node-version: 22
           cache: yarn
-
-      # maker-rpm 需要 rpmbuild；ubuntu runner 默认没装（deb 用的 dpkg/fakeroot 已自带）
-      - name: Install RPM tooling (Linux)
-        if: matrix.platform == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y rpm
 
       - name: Install dependencies
         run: yarn install --frozen-lockfile
@@ -56,5 +49,3 @@ jobs:
             out/make/**/*.zip
             out/make/**/*.exe
             out/make/**/*.nupkg
-            out/make/**/*.deb
-            out/make/**/*.rpm

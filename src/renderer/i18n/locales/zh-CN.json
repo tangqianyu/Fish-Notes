@@ -102,6 +102,7 @@
   "Model": "模型",
   "Advanced: custom claude CLI path (only if not found)": "高级：自定义 claude CLI 路径（仅在找不到时配置）",
   "Run `which claude` in terminal to find it.": "终端里运行 `which claude` 可查询。",
+  "/usr/local/bin/claude (leave empty to auto-detect)": "/usr/local/bin/claude（留空自动检测）",
   "Testing...": "测试中…",
   "Test connection": "测试连接",
   "Save": "保存",

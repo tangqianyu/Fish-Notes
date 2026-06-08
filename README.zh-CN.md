@@ -4,7 +4,7 @@
 
 一款类似 [Bear](https://bear.app/zh/) 的桌面 Markdown 笔记应用 · React + Electron + TypeScript
 
-本地优先 · 全文搜索 · 端到端加密 · 多主题 · 标签组织
+本地优先 · AI 辅助（Claude）· 全文搜索 · 端到端加密 · 多主题 · 标签组织
 
 [English](./README.md) · 简体中文
 
@@ -45,11 +45,20 @@
 | 数据库   | better-sqlite3 + Drizzle ORM                        |
 | 全文搜索 | SQLite FTS5                                         |
 | 加密     | AES-256-GCM + scrypt                                |
+| AI       | Claude Code CLI（`claude -p`，本机 OAuth token）    |
 | 国际化   | i18next + react-i18next                             |
 | 导出     | marked → HTML / Markdown 直写 / Electron printToPDF |
 | 包管理   | yarn                                                |
 
 ## 功能
+
+### AI（基于 Claude）
+
+- **生成标题** — 点标题栏旁的 ✨ 按钮，一键把笔记内容概括成简洁标题
+- **润色文字** — 选中任意段落，弹出气泡交给 Claude 润色，保持原意和 Markdown 语法不变
+- **走你自己的 Claude Code CLI** — 在设置里粘贴一次 `claude setup-token` 生成的 OAuth token 即可；无第三方服务器，请求从你本机直连 Anthropic
+
+> 需本机安装 [Claude Code CLI](https://docs.claude.com/en/docs/claude-code)（`npm install -g @anthropic-ai/claude-code`）。在 **设置 → AI** 中填写 token 和模型（默认 `claude-sonnet-4-6`）。
 
 ### 编辑
 

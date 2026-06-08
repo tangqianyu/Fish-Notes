@@ -4,7 +4,7 @@
 
 A [Bear](https://bear.app)-like desktop Markdown note-taking app · React + Electron + TypeScript
 
-Local-first · Full-text search · End-to-end encryption · Multiple themes · Tag organization
+Local-first · AI assist (Claude) · Full-text search · End-to-end encryption · Multiple themes · Tag organization
 
 English · [简体中文](./README.zh-CN.md)
 
@@ -45,11 +45,20 @@ Grab the installer for your platform from the **[Releases page](https://github.c
 | Database         | better-sqlite3 + Drizzle ORM                        |
 | Full-text search | SQLite FTS5                                         |
 | Encryption       | AES-256-GCM + scrypt                                |
+| AI               | Claude Code CLI (`claude -p`, local OAuth token)    |
 | i18n             | i18next + react-i18next                             |
 | Export           | marked → HTML / direct Markdown / Electron printToPDF |
 | Package manager  | yarn                                                |
 
 ## Features
+
+### AI (powered by Claude)
+
+- **Generate title** — one click on the ✨ button beside the title to summarize the note into a concise title
+- **Polish text** — select any passage; a bubble appears to let Claude refine the wording while preserving the original meaning and Markdown syntax
+- **Runs through your own Claude Code CLI** — authenticate once in Settings with an OAuth token from `claude setup-token`; no third-party server, requests go straight from your machine to Anthropic
+
+> Requires the [Claude Code CLI](https://docs.claude.com/en/docs/claude-code) installed locally (`npm install -g @anthropic-ai/claude-code`). Set the token and model under **Settings → AI** (default model `claude-sonnet-4-6`).
 
 ### Editing
 

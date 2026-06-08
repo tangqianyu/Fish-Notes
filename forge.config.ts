@@ -13,6 +13,9 @@ const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
     icon: 'src/assets/icon',
+    // 固定可执行文件名，否则默认用 productName ("Fish Notes")，
+    // 而 maker-deb/maker-rpm 会按小写包名找 "fish-notes" 二进制，导致 Linux 打包失败。
+    executableName: 'fish-notes',
     extraResource: [
       'node_modules/better-sqlite3',
       'node_modules/bindings',

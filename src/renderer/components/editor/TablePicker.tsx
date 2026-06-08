@@ -22,9 +22,7 @@ export default function TablePicker({ onSelect, onClose }: TablePickerProps) {
     return () => document.removeEventListener('mousedown', handler);
   }, [onClose]);
 
-  const label = hover
-    ? `${hover.rows} × ${hover.cols}`
-    : t('Select table size');
+  const label = hover ? `${hover.rows} × ${hover.cols}` : t('Select table size');
 
   return (
     <div
@@ -39,10 +37,7 @@ export default function TablePicker({ onSelect, onClose }: TablePickerProps) {
       >
         {label}
       </div>
-      <div
-        className="grid gap-0.5"
-        style={{ gridTemplateColumns: `repeat(${MAX_COLS}, 1.25rem)` }}
-      >
+      <div className="grid gap-0.5" style={{ gridTemplateColumns: `repeat(${MAX_COLS}, 1.25rem)` }}>
         {Array.from({ length: MAX_ROWS * MAX_COLS }).map((_, i) => {
           const r = Math.floor(i / MAX_COLS) + 1;
           const c = (i % MAX_COLS) + 1;

@@ -41,7 +41,8 @@ contextBridge.exposeInMainWorld('api', {
     notes: (query: string) => ipcRenderer.invoke('search:notes', query),
   },
   export: {
-    markdown: (title: string, content: string) => ipcRenderer.invoke('export:markdown', title, content),
+    markdown: (title: string, content: string) =>
+      ipcRenderer.invoke('export:markdown', title, content),
     html: (title: string, content: string) => ipcRenderer.invoke('export:html', title, content),
     pdf: (title: string, content: string) => ipcRenderer.invoke('export:pdf', title, content),
   },

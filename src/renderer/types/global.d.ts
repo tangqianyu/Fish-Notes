@@ -24,7 +24,10 @@ interface Window {
       getAll: () => Promise<NoteData[]>;
       getTrashed: () => Promise<NoteData[]>;
       get: (id: string) => Promise<NoteData | undefined>;
-      update: (id: string, data: { title?: string; content?: string; contentText?: string }) => Promise<void>;
+      update: (
+        id: string,
+        data: { title?: string; content?: string; contentText?: string },
+      ) => Promise<void>;
       trash: (id: string) => Promise<void>;
       restore: (id: string) => Promise<void>;
       deletePermanently: (id: string) => Promise<void>;

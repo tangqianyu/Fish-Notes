@@ -182,8 +182,10 @@ export const toggleOrderedList: Command = (view) =>
 export const toggleTaskList: Command = (view) =>
   applyLinePrefix(view, '- [ ] ', { exclusive: [/^[-*+]\s+(\[.\]\s+)?/, /^\d+\.\s+/] });
 
-export const headingCommands = (level: 1 | 2 | 3 | 4 | 5 | 6): Command =>
-  (view) => applyLinePrefix(view, '#'.repeat(level) + ' ', { exclusive: [HEADING_RE] });
+export const headingCommands =
+  (level: 1 | 2 | 3 | 4 | 5 | 6): Command =>
+  (view) =>
+    applyLinePrefix(view, '#'.repeat(level) + ' ', { exclusive: [HEADING_RE] });
 
 // ---------- Table ----------
 

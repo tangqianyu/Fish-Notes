@@ -68,7 +68,10 @@ function Layout() {
     const startX = e.clientX;
 
     const onMouseMove = (moveEvent: MouseEvent) => {
-      const newWidth = Math.max(SIDEBAR_MIN, Math.min(SIDEBAR_MAX, sidebarWidthRef.current + moveEvent.clientX - startX));
+      const newWidth = Math.max(
+        SIDEBAR_MIN,
+        Math.min(SIDEBAR_MAX, sidebarWidthRef.current + moveEvent.clientX - startX),
+      );
       setSidebarWidth(newWidth);
     };
 
@@ -90,7 +93,10 @@ function Layout() {
     const startX = e.clientX;
 
     const onMouseMove = (moveEvent: MouseEvent) => {
-      const newWidth = Math.max(NOTELIST_MIN, Math.min(NOTELIST_MAX, noteListWidthRef.current + moveEvent.clientX - startX));
+      const newWidth = Math.max(
+        NOTELIST_MIN,
+        Math.min(NOTELIST_MAX, noteListWidthRef.current + moveEvent.clientX - startX),
+      );
       setNoteListWidth(newWidth);
     };
 

@@ -1,4 +1,4 @@
-import { BrowserWindow,app } from 'electron';
+import { BrowserWindow, app } from 'electron';
 import { writeFileSync } from 'node:fs';
 import { exportHtml } from './html';
 import path from 'node:path';
@@ -19,7 +19,8 @@ export async function exportPdf(filePath: string, title: string, content: string
 
   const pdfData = await win.webContents.printToPDF({
     pageSize: 'A4',
-    margins: { top: 20, bottom: 20, left: 20, right: 20 },
+    // Electron expects margins in inches
+    margins: { top: 0.4, bottom: 0.4, left: 0.4, right: 0.4 },
   });
 
   writeFileSync(filePath, pdfData);

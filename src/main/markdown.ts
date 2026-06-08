@@ -72,10 +72,7 @@ export function markdownToHtml(md: string): string {
   let html = marked.parse(processed, { async: false, breaks: true, gfm: true }) as string;
 
   for (let i = 0; i < tagPlaceholders.length; i++) {
-    html = html.replace(
-      `%%HASHTAG_${i}%%`,
-      `<span class="hashtag">${tagPlaceholders[i]}</span>`,
-    );
+    html = html.replace(`%%HASHTAG_${i}%%`, `<span class="hashtag">${tagPlaceholders[i]}</span>`);
   }
 
   // Tag blank-line paragraphs so the matching CSS can zero out their margins.

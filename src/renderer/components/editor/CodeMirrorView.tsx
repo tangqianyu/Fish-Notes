@@ -1,6 +1,12 @@
 import { useEffect, useImperativeHandle, useRef, forwardRef } from 'react';
 import { EditorState, type Extension } from '@codemirror/state';
-import { EditorView, keymap, drawSelection, lineNumbers, highlightActiveLine } from '@codemirror/view';
+import {
+  EditorView,
+  keymap,
+  drawSelection,
+  lineNumbers,
+  highlightActiveLine,
+} from '@codemirror/view';
 import { history, defaultKeymap, historyKeymap, indentWithTab } from '@codemirror/commands';
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
 import { syntaxHighlighting, defaultHighlightStyle, bracketMatching } from '@codemirror/language';

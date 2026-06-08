@@ -178,9 +178,10 @@ export function unlockNote(id: string): boolean {
 
 export function reEncryptAllNotes(oldKey: Buffer, newKey: Buffer): void {
   const rawDb = getRawDatabase();
-  const rows = rawDb
-    .prepare('SELECT id, content FROM notes WHERE is_locked = 1')
-    .all() as { id: string; content: string }[];
+  const rows = rawDb.prepare('SELECT id, content FROM notes WHERE is_locked = 1').all() as {
+    id: string;
+    content: string;
+  }[];
 
   const stmt = rawDb.prepare('UPDATE notes SET content = ? WHERE id = ?');
   const transaction = rawDb.transaction(() => {
@@ -197,7 +198,9 @@ export function reEncryptAllNotes(oldKey: Buffer, newKey: Buffer): void {
 export function decryptAllNotes(key: Buffer): void {
   const rawDb = getRawDatabase();
   const rows = rawDb
-    .prepare('SELECT id, content, content_format, content_html_legacy FROM notes WHERE is_locked = 1')
+    .prepare(
+      'SELECT id, content, content_format, content_html_legacy FROM notes WHERE is_locked = 1',
+    )
     .all() as {
     id: string;
     content: string;

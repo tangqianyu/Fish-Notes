@@ -1,5 +1,6 @@
 /* Light theme (default) */
-:root, [data-theme="light"] {
+:root,
+[data-theme='light'] {
   --bg-primary: #ffffff;
   --bg-secondary: #f9fafb;
   --bg-tertiary: #f3f4f6;
@@ -30,7 +31,7 @@
 }
 
 /* Dark theme */
-[data-theme="dark"] {
+[data-theme='dark'] {
   --bg-primary: #1a1a2e;
   --bg-secondary: #16213e;
   --bg-tertiary: #0f3460;
@@ -61,7 +62,7 @@
 }
 
 /* Solarized theme */
-[data-theme="solarized"] {
+[data-theme='solarized'] {
   --bg-primary: #fdf6e3;
   --bg-secondary: #eee8d5;
   --bg-tertiary: #e8e1cb;
@@ -92,7 +93,7 @@
 }
 
 /* Anime theme — sakura pink & lavender */
-[data-theme="anime"] {
+[data-theme='anime'] {
   --bg-primary: #fef5f8;
   --bg-secondary: #f8e8ef;
   --bg-tertiary: #f0dce6;

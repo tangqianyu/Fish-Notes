@@ -23,7 +23,7 @@ function buildFts5Query(raw: string): string {
     .trim()
     .split(/\s+/)
     .filter(Boolean)
-    .map(token => '"' + token.replace(/"/g, '""') + '"*')
+    .map((token) => '"' + token.replace(/"/g, '""') + '"*')
     .join(' ');
 }
 
@@ -43,7 +43,7 @@ export function searchNotes(query: string): SearchResult[] {
     })
     .from(notes)
     .where(
-      sql`rowid IN (SELECT rowid FROM notes_fts WHERE notes_fts MATCH ${ftsQuery}) AND ${notes.isTrashed} = 0`
+      sql`rowid IN (SELECT rowid FROM notes_fts WHERE notes_fts MATCH ${ftsQuery}) AND ${notes.isTrashed} = 0`,
     )
     .all();
 

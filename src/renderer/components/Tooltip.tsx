@@ -68,9 +68,7 @@ export default function Tooltip({
               left: pos.x,
               top: pos.y,
               transform:
-                placement === 'top'
-                  ? 'translate(-50%, calc(-100% - 6px))'
-                  : 'translate(-50%, 6px)',
+                placement === 'top' ? 'translate(-50%, calc(-100% - 6px))' : 'translate(-50%, 6px)',
             }}
           >
             <div

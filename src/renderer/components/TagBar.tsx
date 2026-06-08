@@ -78,13 +78,19 @@ function TagBar({ noteId }: TagBarProps) {
     .filter((t) => !inputValue || t.name.toLowerCase().includes(inputValue.toLowerCase()));
 
   return (
-    <div className="flex items-center gap-1.5 px-4 py-1.5 min-h-[32px] flex-wrap" style={{ borderBottom: '1px solid var(--border-secondary)' }}>
+    <div
+      className="flex items-center gap-1.5 px-4 py-1.5 min-h-[32px] flex-wrap"
+      style={{ borderBottom: '1px solid var(--border-secondary)' }}
+    >
       {/* Existing tags */}
       {noteTags.map((tag) => (
         <span
           key={tag.id}
           className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs"
-          style={{ backgroundColor: 'var(--tag-bg, rgba(59,130,246,0.1))', color: 'var(--tag-text, #3b82f6)' }}
+          style={{
+            backgroundColor: 'var(--tag-bg, rgba(59,130,246,0.1))',
+            color: 'var(--tag-text, #3b82f6)',
+          }}
         >
           #{tag.name}
           <button
@@ -131,7 +137,10 @@ function TagBar({ noteId }: TagBarProps) {
               />
             </div>
             {suggestions.length > 0 && (
-              <div className="max-h-40 overflow-y-auto border-t" style={{ borderColor: 'var(--border-secondary)' }}>
+              <div
+                className="max-h-40 overflow-y-auto border-t"
+                style={{ borderColor: 'var(--border-secondary)' }}
+              >
                 {suggestions.map((tag) => (
                   <button
                     key={tag.id}

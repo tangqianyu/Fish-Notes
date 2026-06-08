@@ -199,14 +199,14 @@ flowchart LR
 
 未来添加 AI 功能时的建议落点（按"实现难度 × 用户价值"排序）：
 
-| AI 功能 | UI 落点 | Main 进程模块 |
-|---|---|---|
-| AI 标题建议 | `Editor.tsx` 标题输入框旁边按钮 | `ai/titleSuggestion.ts` |
-| AI 自动打标签 | `TagBar.tsx` 的 `+` 按钮旁"AI 建议"按钮 | `ai/tagSuggestion.ts` |
-| AI 续写 / 重写 | CodeMirror 自定义 command + 工具栏按钮 | `ai/rewrite.ts` |
-| AI Q&A (RAG) | 新建 `AskBar.tsx`，类似 SearchBar 弹窗 | `ai/embedding.ts` + `ai/qa.ts` |
-| 相关笔记推荐 | `Editor.tsx` 侧栏新增 panel | `ai/similarity.ts` |
-| AI 周报 / 月报 | 独立页面或 Settings 里 tab | `ai/summary.ts` |
+| AI 功能        | UI 落点                                 | Main 进程模块                  |
+| -------------- | --------------------------------------- | ------------------------------ |
+| AI 标题建议    | `Editor.tsx` 标题输入框旁边按钮         | `ai/titleSuggestion.ts`        |
+| AI 自动打标签  | `TagBar.tsx` 的 `+` 按钮旁"AI 建议"按钮 | `ai/tagSuggestion.ts`          |
+| AI 续写 / 重写 | CodeMirror 自定义 command + 工具栏按钮  | `ai/rewrite.ts`                |
+| AI Q&A (RAG)   | 新建 `AskBar.tsx`，类似 SearchBar 弹窗  | `ai/embedding.ts` + `ai/qa.ts` |
+| 相关笔记推荐   | `Editor.tsx` 侧栏新增 panel             | `ai/similarity.ts`             |
+| AI 周报 / 月报 | 独立页面或 Settings 里 tab              | `ai/summary.ts`                |
 
 切换到 Markdown 编辑器之后，所有 AI 功能的输入输出都是纯 Markdown，不再需要 HTML↔MD 来回转换，对 LLM API 集成、流式渲染、diff 视图都更友好。
 

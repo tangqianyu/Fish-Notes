@@ -82,9 +82,7 @@ export function getNotesByTag(tagId: string): string[] {
 export function deleteUnusedTags(): void {
   const db = getDatabase();
   db.delete(tags)
-    .where(
-      sql`${tags.id} NOT IN (SELECT DISTINCT tag_id FROM note_tags)`
-    )
+    .where(sql`${tags.id} NOT IN (SELECT DISTINCT tag_id FROM note_tags)`)
     .run();
 }
 

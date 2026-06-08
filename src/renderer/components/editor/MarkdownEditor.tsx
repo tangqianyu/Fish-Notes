@@ -220,31 +220,34 @@ export default function MarkdownEditor({
 
   const getView = useCallback(() => editorRef.current?.view ?? null, []);
 
-  const syncScroll = useCallback((source: 'editor' | 'preview') => {
-    if (isScrollingSyncRef.current) return;
-    if (mode !== 'split') return;
-    const editorScroller = editorRef.current?.view?.scrollDOM;
-    const previewScroller = previewScrollRef.current;
-    if (!editorScroller || !previewScroller) return;
+  const syncScroll = useCallback(
+    (source: 'editor' | 'preview') => {
+      if (isScrollingSyncRef.current) return;
+      if (mode !== 'split') return;
+      const editorScroller = editorRef.current?.view?.scrollDOM;
+      const previewScroller = previewScrollRef.current;
+      if (!editorScroller || !previewScroller) return;
 
-    isScrollingSyncRef.current = true;
-    if (source === 'editor') {
-      const ratio =
-        editorScroller.scrollTop /
-        Math.max(1, editorScroller.scrollHeight - editorScroller.clientHeight);
-      previewScroller.scrollTop =
-        ratio * (previewScroller.scrollHeight - previewScroller.clientHeight);
-    } else {
-      const ratio =
-        previewScroller.scrollTop /
-        Math.max(1, previewScroller.scrollHeight - previewScroller.clientHeight);
-      editorScroller.scrollTop =
-        ratio * (editorScroller.scrollHeight - editorScroller.clientHeight);
-    }
-    requestAnimationFrame(() => {
-      isScrollingSyncRef.current = false;
-    });
-  }, [mode]);
+      isScrollingSyncRef.current = true;
+      if (source === 'editor') {
+        const ratio =
+          editorScroller.scrollTop /
+          Math.max(1, editorScroller.scrollHeight - editorScroller.clientHeight);
+        previewScroller.scrollTop =
+          ratio * (previewScroller.scrollHeight - previewScroller.clientHeight);
+      } else {
+        const ratio =
+          previewScroller.scrollTop /
+          Math.max(1, previewScroller.scrollHeight - previewScroller.clientHeight);
+        editorScroller.scrollTop =
+          ratio * (editorScroller.scrollHeight - editorScroller.clientHeight);
+      }
+      requestAnimationFrame(() => {
+        isScrollingSyncRef.current = false;
+      });
+    },
+    [mode],
+  );
 
   useEffect(() => {
     if (mode !== 'split') return;
@@ -272,9 +275,24 @@ export default function MarkdownEditor({
           borderBottom: '1px solid var(--border-secondary)',
         }}
       >
-        <TabButton label="MD" shortcut="⌘1" active={mode === 'source'} onClick={() => updateMode('source')} />
-        <TabButton label={t('Preview')} shortcut="⌘2" active={mode === 'preview'} onClick={() => updateMode('preview')} />
-        <TabButton label={t('Split')} shortcut="⌘3" active={mode === 'split'} onClick={() => updateMode('split')} />
+        <TabButton
+          label="MD"
+          shortcut="⌘1"
+          active={mode === 'source'}
+          onClick={() => updateMode('source')}
+        />
+        <TabButton
+          label={t('Preview')}
+          shortcut="⌘2"
+          active={mode === 'preview'}
+          onClick={() => updateMode('preview')}
+        />
+        <TabButton
+          label={t('Split')}
+          shortcut="⌘3"
+          active={mode === 'split'}
+          onClick={() => updateMode('split')}
+        />
       </div>
 
       {showToolbar && mode !== 'preview' && <EditorToolbar getView={getView} />}
@@ -327,15 +345,18 @@ export default function MarkdownEditor({
               top: bubblePos.top,
               left: bubblePos.left,
               transform:
-                bubblePos.placement === 'above'
-                  ? 'translate(-50%, -100%)'
-                  : 'translate(-50%, 0)',
+                bubblePos.placement === 'above' ? 'translate(-50%, -100%)' : 'translate(-50%, 0)',
               backgroundColor: '#f97316',
               color: 'white',
             }}
           >
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"
+              />
             </svg>
             {t('AI polish')}
           </button>,

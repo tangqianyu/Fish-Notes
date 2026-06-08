@@ -61,18 +61,12 @@ function renderMarkdown(md: string): string {
 
   let html = marked.parse(processed, { async: false, breaks: true, gfm: true }) as string;
   for (let i = 0; i < tagPlaceholders.length; i++) {
-    html = html.replace(
-      `%%HASHTAG_${i}%%`,
-      `<span class="hashtag">${tagPlaceholders[i]}</span>`,
-    );
+    html = html.replace(`%%HASHTAG_${i}%%`, `<span class="hashtag">${tagPlaceholders[i]}</span>`);
   }
 
   // marked doesn't emit target/rel on links; add them so Electron's
   // setWindowOpenHandler can route external links to the default browser.
-  html = html.replace(
-    /<a (?![^>]*\btarget=)/g,
-    '<a target="_blank" rel="noopener noreferrer" ',
-  );
+  html = html.replace(/<a (?![^>]*\btarget=)/g, '<a target="_blank" rel="noopener noreferrer" ');
 
   // Tag blank-line paragraphs (the &nbsp; rows we injected) so CSS can collapse
   // their margins and match source's per-line spacing.

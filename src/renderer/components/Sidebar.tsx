@@ -80,7 +80,11 @@ function Sidebar({ width, onResizeStart, onSearchClick, onSettingsClick }: Sideb
   return (
     <div
       className="relative flex flex-col no-select shrink-0 transition-colors"
-      style={{ width, backgroundColor: 'var(--bg-secondary)', borderRight: '1px solid var(--border-primary)' }}
+      style={{
+        width,
+        backgroundColor: 'var(--bg-secondary)',
+        borderRight: '1px solid var(--border-primary)',
+      }}
     >
       {/* Search */}
       <div className="px-3 pt-14 pb-2">
@@ -90,7 +94,12 @@ function Sidebar({ width, onResizeStart, onSearchClick, onSettingsClick }: Sideb
           style={{ backgroundColor: 'var(--search-bg)', color: 'var(--text-tertiary)' }}
         >
           <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+            />
           </svg>
           {t('Search')}
         </div>
@@ -98,15 +107,30 @@ function Sidebar({ width, onResizeStart, onSearchClick, onSettingsClick }: Sideb
 
       {/* Nav items */}
       <nav className="flex-1 overflow-y-auto px-2 py-1">
-        <SidebarItem icon="📝" label={t('All Notes')} active={viewMode === 'all'} onClick={() => setViewMode('all')} />
-        <SidebarItem icon="🗑️" label={t('Trash')} active={viewMode === 'trash'} onClick={() => setViewMode('trash')} />
+        <SidebarItem
+          icon="📝"
+          label={t('All Notes')}
+          active={viewMode === 'all'}
+          onClick={() => setViewMode('all')}
+        />
+        <SidebarItem
+          icon="🗑️"
+          label={t('Trash')}
+          active={viewMode === 'trash'}
+          onClick={() => setViewMode('trash')}
+        />
 
         {/* Tags */}
-        <div className="mt-4 mb-1 px-2 text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--text-tertiary)' }}>
+        <div
+          className="mt-4 mb-1 px-2 text-xs font-medium uppercase tracking-wider"
+          style={{ color: 'var(--text-tertiary)' }}
+        >
           {t('Tags')}
         </div>
         {tagTree.length === 0 ? (
-          <div className="px-2 py-4 text-sm text-center" style={{ color: 'var(--text-tertiary)' }}>{t('No tags')}</div>
+          <div className="px-2 py-4 text-sm text-center" style={{ color: 'var(--text-tertiary)' }}>
+            {t('No tags')}
+          </div>
         ) : (
           <TagTreeList
             nodes={tagTree}
@@ -130,8 +154,18 @@ function Sidebar({ width, onResizeStart, onSearchClick, onSettingsClick }: Sideb
           style={{ color: 'var(--text-secondary)' }}
         >
           <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+            />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+            />
           </svg>
           {t('Settings')}
         </button>
@@ -158,7 +192,17 @@ function Sidebar({ width, onResizeStart, onSearchClick, onSettingsClick }: Sideb
   );
 }
 
-function TagTreeList({ nodes, selectedTagId, onSelect, onContextMenu, editingTagId, editingName, onEditingNameChange, onRenameSubmit, depth }: {
+function TagTreeList({
+  nodes,
+  selectedTagId,
+  onSelect,
+  onContextMenu,
+  editingTagId,
+  editingName,
+  onEditingNameChange,
+  onRenameSubmit,
+  depth,
+}: {
   nodes: TagTreeNode[];
   selectedTagId: string | null;
   onSelect: (tagId: string) => void;
@@ -193,10 +237,14 @@ function TagTreeList({ nodes, selectedTagId, onSelect, onContextMenu, editingTag
             >
               <span className="flex items-center truncate">
                 {node.isPinned && <span className="mr-1 text-xs opacity-60">📌</span>}
-                <span className="mr-1.5" style={{ color: 'var(--text-tertiary)' }}>#</span>
+                <span className="mr-1.5" style={{ color: 'var(--text-tertiary)' }}>
+                  #
+                </span>
                 {node.name}
               </span>
-              <span className="text-xs ml-1" style={{ color: 'var(--text-tertiary)' }}>{node.noteCount}</span>
+              <span className="text-xs ml-1" style={{ color: 'var(--text-tertiary)' }}>
+                {node.noteCount}
+              </span>
             </button>
           )}
           {node.children.length > 0 && (
@@ -218,7 +266,12 @@ function TagTreeList({ nodes, selectedTagId, onSelect, onContextMenu, editingTag
   );
 }
 
-function RenameInput({ value, onChange, onSubmit, depth }: {
+function RenameInput({
+  value,
+  onChange,
+  onSubmit,
+  depth,
+}: {
   value: string;
   onChange: (v: string) => void;
   onSubmit: () => void;
@@ -233,7 +286,9 @@ function RenameInput({ value, onChange, onSubmit, depth }: {
 
   return (
     <div className="flex items-center px-2 py-1" style={{ paddingLeft: `${8 + depth * 16}px` }}>
-      <span className="mr-1.5 text-sm" style={{ color: 'var(--text-tertiary)' }}>#</span>
+      <span className="mr-1.5 text-sm" style={{ color: 'var(--text-tertiary)' }}>
+        #
+      </span>
       <input
         ref={inputRef}
         value={value}
@@ -250,7 +305,14 @@ function RenameInput({ value, onChange, onSubmit, depth }: {
   );
 }
 
-function TagContextMenu({ x, y, isPinned, onPin, onRename, onDelete }: {
+function TagContextMenu({
+  x,
+  y,
+  isPinned,
+  onPin,
+  onRename,
+  onDelete,
+}: {
   x: number;
   y: number;
   isPinned: boolean;
@@ -293,7 +355,11 @@ function TagContextMenu({ x, y, isPinned, onPin, onRename, onDelete }: {
   );
 }
 
-function ContextMenuItem({ label, onClick, danger = false }: {
+function ContextMenuItem({
+  label,
+  onClick,
+  danger = false,
+}: {
   label: string;
   onClick: () => void;
   danger?: boolean;
@@ -312,7 +378,12 @@ function ContextMenuItem({ label, onClick, danger = false }: {
   );
 }
 
-function SidebarItem({ icon, label, active = false, onClick }: {
+function SidebarItem({
+  icon,
+  label,
+  active = false,
+  onClick,
+}: {
   icon: string;
   label: string;
   active?: boolean;

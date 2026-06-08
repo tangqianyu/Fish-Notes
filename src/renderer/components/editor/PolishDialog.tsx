@@ -73,10 +73,8 @@ export default function PolishDialog({
                   onClick={() => setViewMode('unified')}
                   className="px-2 py-1 transition-colors"
                   style={{
-                    backgroundColor:
-                      viewMode === 'unified' ? 'var(--bg-active)' : 'transparent',
-                    color:
-                      viewMode === 'unified' ? 'var(--text-active)' : 'var(--text-tertiary)',
+                    backgroundColor: viewMode === 'unified' ? 'var(--bg-active)' : 'transparent',
+                    color: viewMode === 'unified' ? 'var(--text-active)' : 'var(--text-tertiary)',
                   }}
                 >
                   {t('Unified')}
@@ -85,8 +83,7 @@ export default function PolishDialog({
                   onClick={() => setViewMode('sideBySide')}
                   className="px-2 py-1 transition-colors"
                   style={{
-                    backgroundColor:
-                      viewMode === 'sideBySide' ? 'var(--bg-active)' : 'transparent',
+                    backgroundColor: viewMode === 'sideBySide' ? 'var(--bg-active)' : 'transparent',
                     color:
                       viewMode === 'sideBySide' ? 'var(--text-active)' : 'var(--text-tertiary)',
                   }}
@@ -101,7 +98,12 @@ export default function PolishDialog({
               style={{ color: 'var(--text-tertiary)' }}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
               </svg>
             </button>
           </div>
@@ -115,8 +117,20 @@ export default function PolishDialog({
               style={{ color: 'var(--text-tertiary)' }}
             >
               <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
-                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" opacity="0.25" />
-                <path d="M4 12a8 8 0 018-8" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="3"
+                  opacity="0.25"
+                />
+                <path
+                  d="M4 12a8 8 0 018-8"
+                  stroke="currentColor"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                />
               </svg>
               <span className="text-sm">{t('Polishing...')}</span>
             </div>

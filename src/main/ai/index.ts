@@ -77,7 +77,9 @@ function runClaude(
   return new Promise((resolve, reject) => {
     const cfg = getAIConfig();
     if (!cfg.token) {
-      return reject(new Error('Claude token 未配置，请在设置中粘贴 `claude setup-token` 生成的 token'));
+      return reject(
+        new Error('Claude token 未配置，请在设置中粘贴 `claude setup-token` 生成的 token'),
+      );
     }
 
     const bin = cfg.claudePath || 'claude';
@@ -96,15 +98,21 @@ function runClaude(
 
     let stdout = '';
     let stderr = '';
-    proc.stdout.on('data', (d) => { stdout += d.toString(); });
-    proc.stderr.on('data', (d) => { stderr += d.toString(); });
+    proc.stdout.on('data', (d) => {
+      stdout += d.toString();
+    });
+    proc.stderr.on('data', (d) => {
+      stderr += d.toString();
+    });
 
     proc.on('error', (err) => {
       if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
-        reject(new Error(
-          '找不到 claude CLI。请先执行：npm install -g @anthropic-ai/claude-code\n' +
-          '或在设置里填写 claude 的绝对路径（可用 `which claude` 查询）',
-        ));
+        reject(
+          new Error(
+            '找不到 claude CLI。请先执行：npm install -g @anthropic-ai/claude-code\n' +
+              '或在设置里填写 claude 的绝对路径（可用 `which claude` 查询）',
+          ),
+        );
       } else {
         reject(err);
       }

@@ -81,6 +81,7 @@ src/
 ## 核心数据流
 
 ### 编辑保存
+
 - **内容保存**: 用户输入 → CodeMirror updateListener → MarkdownEditor.handleChange → Editor.handleChange（跳过无变化内容）→ useAutoSave(500ms 防抖) → AppContext.updateNoteContent → stripMarkdown 提取纯文本 → IPC 保存 content + contentText 到 SQLite + dispatch 更新状态
 - **标题保存**: title input onChange → 独立的 useAutoSave(500ms) → updateNoteTitle → IPC 保存
 - **快捷保存**: Cmd+S 由 CodeMirror keymap 捕获，绕过防抖直接触发 onSave
@@ -94,12 +95,14 @@ src/
 **工具栏**: 默认显示，覆盖 B/I/S/H(下拉 1-6)/quote/link/inline-code/code-block/ul/ol/task/image/hr/table-picker/format-table。每个按钮带 Tooltip（label + 平台感知 kbd 快捷键），通过 localStorage `fish-notes:editor-toolbar` 控制显隐。
 
 **Markdown 快捷输入**（4 层叠加）:
+
 1. **键盘快捷键**: Cmd+B/I/E/K/Shift+S/Shift+E/Shift+L/Shift+O/Shift+T/Shift+. + Cmd+1~6（标题）
 2. **工具栏按钮**: 复用第 1 层的 command 实现；`HeadingMenu`/`TableMenu` 是带 dropdown 的复合按钮
 3. **Slash 命令**: 暂未实现（Phase 2）
 4. **智能行为**: closeBrackets 自动闭合括号、列表续行（Enter）、空列表回车退出
 
 **表格支持**:
+
 - `insertTable(rows, cols)` 命令插入对齐的空表模板，光标落在首个 header 单元格
 - `formatTable` 命令检测光标当前行所在的表格，找每列最大宽度，重排所有单元格 padding 一致，保留对齐标记（`:--` / `--:`）
 - `TablePicker` 是网格选择器组件，hover 高亮左上区域，顶部显示 "N × M"，点击触发 `insertTable`
@@ -111,6 +114,7 @@ src/
 **外部链接**: `MarkdownPreview` 渲染后 regex 给所有 `<a>` 加 `target="_blank" rel="noopener"`，再加一层 click 兜底拦截 http/https/mailto/tel 协议调 `window.open(href, '_blank')`，最终由 main.ts 的 `setWindowOpenHandler` 路由到 `shell.openExternal`，用系统默认浏览器打开。
 
 ### 标签系统
+
 - **标签管理**: 标签通过 TagBar 的 `+` 按钮直接添加/移除，不从编辑器内容中自动解析
 - **嵌套标签**: `#parent/child/grandchild`，`/` 分隔，数据库存储完整路径，侧边栏通过 `buildTagTree()` 动态构建树形结构
 - **TagBar**: 显示当前笔记标签（蓝色药丸 + × 移除），`+` 按钮弹出搜索框，可选择已有标签或输入新名称创建
@@ -121,6 +125,7 @@ src/
 - **清理**: 移除标签后调用 `cleanupUnused()` 删除孤立标签
 
 ### 笔记加密系统
+
 - 使用 AES-256-GCM 对笔记内容进行端到端加密，密码通过 scrypt 哈希
 - 用户在 Settings 中设置密码，密码哈希和盐值存储在 `app_settings` 表
 - 会话管理: 验证密码后密钥缓存在内存中，锁定会话时清除
@@ -133,6 +138,7 @@ src/
 - IPC: `window.api.encryption.*`（密码管理）+ `window.api.notes.lock/unlock/getDecrypted`
 
 ### 图片系统
+
 - 支持拖拽、粘贴、`![]()` 工具栏按钮三种方式插入图片
 - 图片存储在 `~/.config/Fish Notes/images/`，UUID 命名
 - 自定义 `fish-image://` 协议访问本地图片
@@ -140,6 +146,7 @@ src/
 - 支持格式: PNG, JPEG, GIF, WebP, BMP, SVG
 
 ### IPC 通信
+
 renderer 通过 `window.api.*` 调用 → preload.ts → ipcRenderer.invoke → handlers.ts → database 函数
 
 ## 数据库
@@ -147,12 +154,14 @@ renderer 通过 `window.api.*` 调用 → preload.ts → ipcRenderer.invoke → 
 SQLite 文件位置: `~/Library/Application Support/Fish Notes/`(macOS)
 
 **四张表**:
+
 - `notes`: id, title, content (Markdown), content_text (纯文本, FTS用), content_format, content_html_legacy (备份), created_at, updated_at, is_trashed, is_pinned, is_locked
 - `tags`: id, name (unique), parent_id, is_pinned
 - `note_tags`: note_id, tag_id（多对多关联）
 - `app_settings`: key, value（存储加密密码哈希、盐值等配置）
 
 **迁移**: 在 `database/index.ts` 中用 `pragma('table_info')` 检查并 ALTER TABLE。当前包含两次主要内容格式迁移：
+
 1. （历史）`md → html`: 旧 DB 中 markdown 笔记升级时转 HTML
 2. （当前）`html → markdown`: 启动时把所有非加密 HTML 笔记经 turndown 转回 Markdown，原 HTML 备份到 `content_html_legacy`。加密笔记跳过，由 `notes.unlockNote` 在解锁时按需转换
 

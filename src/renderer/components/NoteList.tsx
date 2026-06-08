@@ -17,7 +17,20 @@ interface NoteContextMenu {
 
 function NoteList({ width, onResizeStart }: NoteListProps) {
   const { t } = useTranslation();
-  const { state, createNote, selectNote, trashNote, restoreNote, deleteNotePermanently, togglePinNote, lockNote, unlockNote, encryptionReady, sessionUnlocked, verifyPassword } = useApp();
+  const {
+    state,
+    createNote,
+    selectNote,
+    trashNote,
+    restoreNote,
+    deleteNotePermanently,
+    togglePinNote,
+    lockNote,
+    unlockNote,
+    encryptionReady,
+    sessionUnlocked,
+    verifyPassword,
+  } = useApp();
   const { notes, selectedNoteId, viewMode } = state;
 
   const [contextMenu, setContextMenu] = useState<NoteContextMenu | null>(null);
@@ -33,11 +46,14 @@ function NoteList({ width, onResizeStart }: NoteListProps) {
     return () => document.removeEventListener('click', handler);
   }, [contextMenu]);
 
-  const handleContextMenu = useCallback((e: React.MouseEvent, noteId: string) => {
-    e.preventDefault();
-    selectNote(noteId);
-    setContextMenu({ x: e.clientX, y: e.clientY, noteId });
-  }, [selectNote]);
+  const handleContextMenu = useCallback(
+    (e: React.MouseEvent, noteId: string) => {
+      e.preventDefault();
+      selectNote(noteId);
+      setContextMenu({ x: e.clientX, y: e.clientY, noteId });
+    },
+    [selectNote],
+  );
 
   const handleTrash = useCallback(async () => {
     if (!contextMenu) return;
@@ -91,17 +107,20 @@ function NoteList({ width, onResizeStart }: NoteListProps) {
     await unlockNote(noteId);
   }, [contextMenu, unlockNote, sessionUnlocked]);
 
-  const handlePasswordVerify = useCallback(async (password: string) => {
-    const ok = await verifyPassword(password);
-    if (ok) {
-      setShowPasswordPrompt(false);
-      if (pendingActionRef.current) {
-        await pendingActionRef.current();
-        pendingActionRef.current = null;
+  const handlePasswordVerify = useCallback(
+    async (password: string) => {
+      const ok = await verifyPassword(password);
+      if (ok) {
+        setShowPasswordPrompt(false);
+        if (pendingActionRef.current) {
+          await pendingActionRef.current();
+          pendingActionRef.current = null;
+        }
       }
-    }
-    return ok;
-  }, [verifyPassword]);
+      return ok;
+    },
+    [verifyPassword],
+  );
 
   const handlePasswordCancel = useCallback(() => {
     setShowPasswordPrompt(false);
@@ -113,14 +132,20 @@ function NoteList({ width, onResizeStart }: NoteListProps) {
   return (
     <div
       className="relative flex flex-col no-select shrink-0 transition-colors"
-      style={{ width, backgroundColor: 'var(--bg-primary)', borderRight: '1px solid var(--border-primary)' }}
+      style={{
+        width,
+        backgroundColor: 'var(--bg-primary)',
+        borderRight: '1px solid var(--border-primary)',
+      }}
     >
       {/* Header */}
       <div
         className="h-12 flex items-center justify-between px-4 shrink-0"
         style={{ borderBottom: '1px solid var(--border-secondary)' }}
       >
-        <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>{headerLabel}</span>
+        <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+          {headerLabel}
+        </span>
         {viewMode !== 'trash' && (
           <button
             onClick={createNote}
@@ -129,7 +154,12 @@ function NoteList({ width, onResizeStart }: NoteListProps) {
             title={t('New Note')}
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 4v16m8-8H4"
+              />
             </svg>
           </button>
         )}
@@ -138,7 +168,10 @@ function NoteList({ width, onResizeStart }: NoteListProps) {
       {/* Note list */}
       <div className="flex-1 overflow-y-auto">
         {notes.length === 0 ? (
-          <div className="flex items-center justify-center h-full text-sm" style={{ color: 'var(--text-tertiary)' }}>
+          <div
+            className="flex items-center justify-center h-full text-sm"
+            style={{ color: 'var(--text-tertiary)' }}
+          >
             {t('No notes')}
           </div>
         ) : (
@@ -161,16 +194,23 @@ function NoteList({ width, onResizeStart }: NoteListProps) {
       />
 
       {/* Context menu */}
-      {contextMenu && (
-        viewMode === 'trash' ? (
+      {contextMenu &&
+        (viewMode === 'trash' ? (
           <NoteContextMenuPopup x={contextMenu.x} y={contextMenu.y}>
             <ContextMenuItem label={t('Restore')} onClick={handleRestore} />
             <div className="my-1 border-t" style={{ borderColor: 'var(--border-secondary)' }} />
-            <ContextMenuItem label={t('Delete Permanently')} onClick={handleDeletePermanently} danger />
+            <ContextMenuItem
+              label={t('Delete Permanently')}
+              onClick={handleDeletePermanently}
+              danger
+            />
           </NoteContextMenuPopup>
         ) : (
           <NoteContextMenuPopup x={contextMenu.x} y={contextMenu.y}>
-            <ContextMenuItem label={contextNote?.isPinned ? t('Unpin') : t('Pin')} onClick={handleTogglePin} />
+            <ContextMenuItem
+              label={contextNote?.isPinned ? t('Unpin') : t('Pin')}
+              onClick={handleTogglePin}
+            />
             {encryptionReady && (
               <>
                 <div className="my-1 border-t" style={{ borderColor: 'var(--border-secondary)' }} />
@@ -184,18 +224,25 @@ function NoteList({ width, onResizeStart }: NoteListProps) {
             <div className="my-1 border-t" style={{ borderColor: 'var(--border-secondary)' }} />
             <ContextMenuItem label={t('Delete')} onClick={handleTrash} danger />
           </NoteContextMenuPopup>
-        )
-      )}
+        ))}
 
       {/* Password prompt modal */}
       {showPasswordPrompt && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center" style={{ backgroundColor: 'var(--overlay-bg)' }}>
+        <div
+          className="fixed inset-0 z-[200] flex items-center justify-center"
+          style={{ backgroundColor: 'var(--overlay-bg)' }}
+        >
           <div
             className="w-80 rounded-xl shadow-2xl p-6"
             style={{ backgroundColor: 'var(--card-bg)' }}
             onClick={(e) => e.stopPropagation()}
           >
-            <PasswordPrompt onVerify={handlePasswordVerify} onCancel={handlePasswordCancel} message={t('Enter password to continue')} buttonText={t('Confirm')} />
+            <PasswordPrompt
+              onVerify={handlePasswordVerify}
+              onCancel={handlePasswordCancel}
+              message={t('Enter password to continue')}
+              buttonText={t('Confirm')}
+            />
           </div>
         </div>
       )}
@@ -203,7 +250,10 @@ function NoteList({ width, onResizeStart }: NoteListProps) {
   );
 }
 
-function formatRelativeDate(dateStr: string, t: (key: string, opts?: Record<string, unknown>) => string): string {
+function formatRelativeDate(
+  dateStr: string,
+  t: (key: string, opts?: Record<string, unknown>) => string,
+): string {
   const now = new Date();
   const date = new Date(dateStr);
   const diffMs = now.getTime() - date.getTime();
@@ -218,10 +268,19 @@ function formatRelativeDate(dateStr: string, t: (key: string, opts?: Record<stri
   if (sameYear) {
     return t('{{month}}/{{day}}', { month: date.getMonth() + 1, day: date.getDate() });
   }
-  return t('{{month}}/{{day}}/{{year}}', { year: date.getFullYear(), month: date.getMonth() + 1, day: date.getDate() });
+  return t('{{month}}/{{day}}/{{year}}', {
+    year: date.getFullYear(),
+    month: date.getMonth() + 1,
+    day: date.getDate(),
+  });
 }
 
-function NoteListItem({ note, isSelected, onClick, onContextMenu }: {
+function NoteListItem({
+  note,
+  isSelected,
+  onClick,
+  onContextMenu,
+}: {
   note: NoteData;
   isSelected: boolean;
   onClick: () => void;
@@ -242,26 +301,51 @@ function NoteListItem({ note, isSelected, onClick, onContextMenu }: {
         backgroundColor: isSelected ? 'var(--bg-active)' : 'transparent',
       }}
     >
-      <div className="flex items-center text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>
+      <div
+        className="flex items-center text-sm font-medium truncate"
+        style={{ color: 'var(--text-primary)' }}
+      >
         {note.isPinned && <span className="mr-1 text-xs opacity-60">📌</span>}
         {note.isLocked && (
-          <svg className="w-3.5 h-3.5 mr-1 shrink-0 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          <svg
+            className="w-3.5 h-3.5 mr-1 shrink-0 opacity-60"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+            />
           </svg>
         )}
         {title}
       </div>
       {note.isLocked ? (
-        <div className="mt-1 text-xs truncate" style={{ color: 'var(--text-tertiary)' }}>{t('Encrypted note')}</div>
+        <div className="mt-1 text-xs truncate" style={{ color: 'var(--text-tertiary)' }}>
+          {t('Encrypted note')}
+        </div>
       ) : (
-        preview && <div className="mt-1 text-xs truncate" style={{ color: 'var(--text-tertiary)' }}>{preview}</div>
+        preview && (
+          <div className="mt-1 text-xs truncate" style={{ color: 'var(--text-tertiary)' }}>
+            {preview}
+          </div>
+        )
       )}
-      <div className="mt-1 text-xs" style={{ color: 'var(--text-tertiary)' }}>{date}</div>
+      <div className="mt-1 text-xs" style={{ color: 'var(--text-tertiary)' }}>
+        {date}
+      </div>
     </button>
   );
 }
 
-function NoteContextMenuPopup({ x, y, children }: {
+function NoteContextMenuPopup({
+  x,
+  y,
+  children,
+}: {
   x: number;
   y: number;
   children: React.ReactNode;
@@ -296,7 +380,11 @@ function NoteContextMenuPopup({ x, y, children }: {
   );
 }
 
-function ContextMenuItem({ label, onClick, danger = false }: {
+function ContextMenuItem({
+  label,
+  onClick,
+  danger = false,
+}: {
   label: string;
   onClick: () => void;
   danger?: boolean;

@@ -3,12 +3,7 @@ import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { app } from 'electron';
 import path from 'node:path';
 import * as schema from './schema';
-import {
-  htmlToMarkdown,
-  markdownToHtml,
-  stripHtmlForFts,
-  stripMarkdownForFts,
-} from '../markdown';
+import { htmlToMarkdown, markdownToHtml, stripHtmlForFts, stripMarkdownForFts } from '../markdown';
 
 let db: ReturnType<typeof drizzle<typeof schema>>;
 let rawDb: Database.Database;
@@ -83,9 +78,7 @@ export function initDatabase() {
     sqlite.exec("ALTER TABLE notes ADD COLUMN content_text TEXT NOT NULL DEFAULT ''");
 
     const mdNotes = sqlite
-      .prepare(
-        "SELECT id, content FROM notes WHERE content_format = 'markdown' AND content != ''",
-      )
+      .prepare("SELECT id, content FROM notes WHERE content_format = 'markdown' AND content != ''")
       .all() as { id: string; content: string }[];
 
     const updateStmt = sqlite.prepare(
@@ -130,7 +123,9 @@ export function initDatabase() {
       updateMdStmt.run(md, plain, note.content, note.id);
     }
 
-    sqlite.exec("UPDATE notes SET content_format = 'markdown' WHERE content = '' AND is_locked = 0");
+    sqlite.exec(
+      "UPDATE notes SET content_format = 'markdown' WHERE content = '' AND is_locked = 0",
+    );
     sqlite.exec("INSERT INTO notes_fts(notes_fts) VALUES('rebuild')");
   }
 

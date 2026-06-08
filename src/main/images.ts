@@ -44,9 +44,7 @@ export function saveImageFromBuffer(buffer: Buffer, mimeType: string): string {
 export async function pickImageFile(): Promise<string | null> {
   const { filePaths, canceled } = await dialog.showOpenDialog({
     title: '选择图片',
-    filters: [
-      { name: '图片', extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'svg'] },
-    ],
+    filters: [{ name: '图片', extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'svg'] }],
     properties: ['openFile'],
   });
   if (canceled || filePaths.length === 0) return null;

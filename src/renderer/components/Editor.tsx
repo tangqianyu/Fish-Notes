@@ -19,7 +19,14 @@ function Editor({ noteId, title, content, isLocked, onContentChange }: EditorPro
   const { t, i18n } = useTranslation();
   const { save } = useAutoSave(500);
   const { save: saveTitle } = useAutoSave(500);
-  const { updateNoteTitle, sessionUnlocked, verifyPassword, encryptionReady, lockNote, unlockNote } = useApp();
+  const {
+    updateNoteTitle,
+    sessionUnlocked,
+    verifyPassword,
+    encryptionReady,
+    lockNote,
+    unlockNote,
+  } = useApp();
   const { theme } = useTheme();
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [localTitle, setLocalTitle] = useState(title);
@@ -62,7 +69,9 @@ function Editor({ noteId, title, content, isLocked, onContentChange }: EditorPro
       }
       setLoadingDecrypted(false);
     });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [noteId, isLocked, sessionUnlocked]);
 
   // Sync title from external changes (e.g. note list selection)
@@ -133,7 +142,7 @@ function Editor({ noteId, title, content, isLocked, onContentChange }: EditorPro
 
   const handleSuggestTitle = useCallback(async () => {
     if (!noteId || suggestingTitle) return;
-    const source = isLocked ? (decryptedContent ?? '') : (lastContentRef.current || content);
+    const source = isLocked ? (decryptedContent ?? '') : lastContentRef.current || content;
     if (!source.trim()) {
       setSuggestError(t('Note is empty'));
       setTimeout(() => setSuggestError(null), 3000);
@@ -170,14 +179,25 @@ function Editor({ noteId, title, content, isLocked, onContentChange }: EditorPro
   const editorContent = isLocked ? (decryptedContent ?? '') : initialContentRef.current;
 
   return (
-    <div className="flex-1 flex flex-col min-w-0 transition-colors" style={{ backgroundColor: 'var(--bg-primary)' }}>
+    <div
+      className="flex-1 flex flex-col min-w-0 transition-colors"
+      style={{ backgroundColor: 'var(--bg-primary)' }}
+    >
       {/* Editor header with export button */}
       <div
         className="h-12 flex items-center justify-end px-4 gap-1 shrink-0 no-select"
-        style={{ borderBottom: '1px solid var(--border-secondary)', WebkitAppRegion: 'drag' } as React.CSSProperties}
+        style={
+          {
+            borderBottom: '1px solid var(--border-secondary)',
+            WebkitAppRegion: 'drag',
+          } as React.CSSProperties
+        }
       >
         {noteId && (
-          <div className="flex items-center gap-1" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
+          <div
+            className="flex items-center gap-1"
+            style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+          >
             {/* Lock/unlock button */}
             {encryptionReady && sessionUnlocked && (
               <button
@@ -188,11 +208,21 @@ function Editor({ noteId, title, content, isLocked, onContentChange }: EditorPro
               >
                 {isLocked ? (
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                    />
                   </svg>
                 ) : (
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"
+                    />
                   </svg>
                 )}
               </button>
@@ -207,13 +237,21 @@ function Editor({ noteId, title, content, isLocked, onContentChange }: EditorPro
                 title={t('Export')}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                  />
                 </svg>
               </button>
               {showExportMenu && (
                 <div
                   className="absolute right-0 top-full mt-1 w-40 rounded-lg shadow-lg border py-1 z-50"
-                  style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-primary)' }}
+                  style={{
+                    backgroundColor: 'var(--card-bg)',
+                    borderColor: 'var(--border-primary)',
+                  }}
                 >
                   <ExportMenuItem label="Markdown (.md)" onClick={() => handleExport('markdown')} />
                   <ExportMenuItem label="HTML (.html)" onClick={() => handleExport('html')} />
@@ -229,7 +267,10 @@ function Editor({ noteId, title, content, isLocked, onContentChange }: EditorPro
         needsPassword ? (
           <PasswordPrompt onVerify={handleVerify} />
         ) : loadingDecrypted ? (
-          <div className="flex-1 flex items-center justify-center" style={{ color: 'var(--text-tertiary)' }}>
+          <div
+            className="flex-1 flex items-center justify-center"
+            style={{ color: 'var(--text-tertiary)' }}
+          >
             {t('Decrypting...')}
           </div>
         ) : (
@@ -257,12 +298,29 @@ function Editor({ noteId, title, content, isLocked, onContentChange }: EditorPro
                 >
                   {suggestingTitle ? (
                     <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" opacity="0.25" />
-                      <path d="M4 12a8 8 0 018-8" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+                      <circle
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="3"
+                        opacity="0.25"
+                      />
+                      <path
+                        d="M4 12a8 8 0 018-8"
+                        stroke="currentColor"
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                      />
                     </svg>
                   ) : (
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"
+                      />
                     </svg>
                   )}
                 </button>
@@ -273,10 +331,24 @@ function Editor({ noteId, title, content, isLocked, onContentChange }: EditorPro
                   className="flex items-center gap-2 px-4 py-2"
                   style={{ backgroundColor: 'var(--bg-tertiary)' }}
                 >
-                  <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: 'var(--text-tertiary)' }}>
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 3l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                  <svg
+                    className="w-3.5 h-3.5 shrink-0"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    style={{ color: 'var(--text-tertiary)' }}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13 3l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"
+                    />
                   </svg>
-                  <span className="flex-1 text-sm truncate" style={{ color: 'var(--text-primary)' }}>
+                  <span
+                    className="flex-1 text-sm truncate"
+                    style={{ color: 'var(--text-primary)' }}
+                  >
                     {titleCandidate}
                   </span>
                   <button
@@ -293,8 +365,18 @@ function Editor({ noteId, title, content, isLocked, onContentChange }: EditorPro
                     style={{ color: 'var(--text-tertiary)' }}
                     title={t('Dismiss')}
                   >
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    <svg
+                      className="w-3.5 h-3.5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M6 18L18 6M6 6l12 12"
+                      />
                     </svg>
                   </button>
                 </div>
@@ -305,11 +387,18 @@ function Editor({ noteId, title, content, isLocked, onContentChange }: EditorPro
             <TagBar noteId={noteId} />
 
             {/* Row 3: Markdown editor */}
-            <MarkdownEditor key={`${noteId}-${theme}-${i18n.language}`} defaultValue={editorContent} onChange={handleChange} />
+            <MarkdownEditor
+              key={`${noteId}-${theme}-${i18n.language}`}
+              defaultValue={editorContent}
+              onChange={handleChange}
+            />
           </>
         )
       ) : (
-        <div className="flex-1 flex items-center justify-center" style={{ color: 'var(--text-tertiary)' }}>
+        <div
+          className="flex-1 flex items-center justify-center"
+          style={{ color: 'var(--text-tertiary)' }}
+        >
           {t('Select or create a note to start writing')}
         </div>
       )}

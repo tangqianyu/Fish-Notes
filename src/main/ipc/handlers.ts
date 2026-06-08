@@ -24,7 +24,9 @@ import {
 
 function getSetting(key: string): string | undefined {
   const rawDb = getRawDatabase();
-  const row = rawDb.prepare('SELECT value FROM app_settings WHERE key = ?').get(key) as { value: string } | undefined;
+  const row = rawDb.prepare('SELECT value FROM app_settings WHERE key = ?').get(key) as
+    | { value: string }
+    | undefined;
   return row?.value;
 }
 
@@ -44,12 +46,16 @@ export function registerIpcHandlers() {
   ipcMain.handle('notes:getAll', () => notesDb.getAllNotes());
   ipcMain.handle('notes:getTrashed', () => notesDb.getTrashedNotes());
   ipcMain.handle('notes:get', (_event, id: string) => notesDb.getNote(id));
-  ipcMain.handle('notes:update', (_event, id: string, data: { title?: string; content?: string; contentText?: string }) =>
-    notesDb.updateNote(id, data),
+  ipcMain.handle(
+    'notes:update',
+    (_event, id: string, data: { title?: string; content?: string; contentText?: string }) =>
+      notesDb.updateNote(id, data),
   );
   ipcMain.handle('notes:trash', (_event, id: string) => notesDb.trashNote(id));
   ipcMain.handle('notes:restore', (_event, id: string) => notesDb.restoreNote(id));
-  ipcMain.handle('notes:deletePermanently', (_event, id: string) => notesDb.deleteNotePermanently(id));
+  ipcMain.handle('notes:deletePermanently', (_event, id: string) =>
+    notesDb.deleteNotePermanently(id),
+  );
   ipcMain.handle('notes:togglePin', (_event, id: string) => notesDb.togglePinNote(id));
 
   // Note encryption
@@ -96,33 +102,36 @@ export function registerIpcHandlers() {
     return true;
   });
 
-  ipcMain.handle('encryption:changePassword', (_event, oldPassword: string, newPassword: string) => {
-    const hash = getSetting('encryption_password_hash');
-    const salt = getSetting('encryption_password_salt');
-    const keySalt = getSetting('encryption_key_salt');
-    if (!hash || !salt || !keySalt) return false;
+  ipcMain.handle(
+    'encryption:changePassword',
+    (_event, oldPassword: string, newPassword: string) => {
+      const hash = getSetting('encryption_password_hash');
+      const salt = getSetting('encryption_password_salt');
+      const keySalt = getSetting('encryption_key_salt');
+      if (!hash || !salt || !keySalt) return false;
 
-    if (!verifyPw(oldPassword, hash, salt)) return false;
+      if (!verifyPw(oldPassword, hash, salt)) return false;
 
-    const oldKey = deriveEncryptionKey(oldPassword, keySalt);
+      const oldKey = deriveEncryptionKey(oldPassword, keySalt);
 
-    // Generate new credentials
-    const newHash = hashPassword(newPassword);
-    const newKeySaltBuf = require('node:crypto').randomBytes(32);
-    const newKeySalt = newKeySaltBuf.toString('base64');
-    const newKey = deriveEncryptionKey(newPassword, newKeySalt);
+      // Generate new credentials
+      const newHash = hashPassword(newPassword);
+      const newKeySaltBuf = require('node:crypto').randomBytes(32);
+      const newKeySalt = newKeySaltBuf.toString('base64');
+      const newKey = deriveEncryptionKey(newPassword, newKeySalt);
 
-    // Re-encrypt all locked notes in a transaction
-    notesDb.reEncryptAllNotes(oldKey, newKey);
+      // Re-encrypt all locked notes in a transaction
+      notesDb.reEncryptAllNotes(oldKey, newKey);
 
-    // Update stored credentials
-    setSetting('encryption_password_hash', newHash.hash);
-    setSetting('encryption_password_salt', newHash.salt);
-    setSetting('encryption_key_salt', newKeySalt);
+      // Update stored credentials
+      setSetting('encryption_password_hash', newHash.hash);
+      setSetting('encryption_password_salt', newHash.salt);
+      setSetting('encryption_key_salt', newKeySalt);
 
-    setCachedKey(newKey);
-    return true;
-  });
+      setCachedKey(newKey);
+      return true;
+    },
+  );
 
   ipcMain.handle('encryption:removePassword', (_event, password: string) => {
     const hash = getSetting('encryption_password_hash');
@@ -160,7 +169,9 @@ export function registerIpcHandlers() {
   ipcMain.handle('tags:getNotesByTag', (_event, tagId: string) => tagsDb.getNotesByTag(tagId));
   ipcMain.handle('tags:cleanupUnused', () => tagsDb.deleteUnusedTags());
   ipcMain.handle('tags:delete', (_event, tagId: string) => tagsDb.deleteTag(tagId));
-  ipcMain.handle('tags:rename', (_event, tagId: string, newName: string) => tagsDb.renameTag(tagId, newName));
+  ipcMain.handle('tags:rename', (_event, tagId: string, newName: string) =>
+    tagsDb.renameTag(tagId, newName),
+  );
   ipcMain.handle('tags:togglePin', (_event, tagId: string) => tagsDb.togglePinTag(tagId));
 
   // Search

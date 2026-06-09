@@ -516,7 +516,7 @@ function Settings({ onClose }: SettingsProps) {
                       setAiClaudePath(e.target.value);
                       setAiTestResult(null);
                     }}
-                    placeholder={t('/usr/local/bin/claude (leave empty to auto-detect)')}
+                    placeholder={t('Leave empty to auto-detect')}
                     className="w-full px-3 py-2 rounded-lg border text-sm outline-none font-mono"
                     style={{
                       backgroundColor: 'var(--bg-secondary)',

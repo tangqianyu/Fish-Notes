@@ -187,3 +187,9 @@ body {
 .markdown-preview input[type='checkbox'] {
   margin-right: 0.4em;
 }
+
+/* AI assistant floating ball: breathing dot while streaming */
+@keyframes fish-breathe {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.7); }
+}

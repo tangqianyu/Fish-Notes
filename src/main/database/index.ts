@@ -59,6 +59,24 @@ export function initDatabase() {
       INSERT INTO notes_fts(notes_fts, rowid, title, content) VALUES('delete', old.rowid, old.title, old.content);
       INSERT INTO notes_fts(rowid, title, content) VALUES (new.rowid, new.title, new.content);
     END;
+
+    CREATE TABLE IF NOT EXISTS ai_chats (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL DEFAULT '',
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS ai_messages (
+      id TEXT PRIMARY KEY,
+      chat_id TEXT NOT NULL REFERENCES ai_chats(id) ON DELETE CASCADE,
+      role TEXT NOT NULL,
+      content TEXT NOT NULL DEFAULT '',
+      note_id TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE INDEX IF NOT EXISTS ai_messages_chat_idx ON ai_messages(chat_id);
   `);
 
   const tagColumns = sqlite.pragma('table_info(tags)') as { name: string }[];

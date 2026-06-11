@@ -5,6 +5,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useApp } from '../contexts/AppContext';
 import { message } from './message';
 import { modal } from './modal';
+import { isAssistantEnabled, setAssistantEnabled } from './assistant/Assistant';
 
 interface SettingsProps {
   onClose: () => void;
@@ -48,6 +49,7 @@ function Settings({ onClose }: SettingsProps) {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [oldPassword, setOldPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [assistantOn, setAssistantOn] = useState(isAssistantEnabled);
 
   // AI config state
   const [aiToken, setAiToken] = useState('');
@@ -451,6 +453,23 @@ function Settings({ onClose }: SettingsProps) {
                 </div>
               </div>
             )}
+          </div>
+
+          {/* AI assistant toggle */}
+          <div className="px-6 pb-5">
+            <label className="flex items-center justify-between cursor-pointer">
+              <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                {t('Show floating assistant')}
+              </span>
+              <input
+                type="checkbox"
+                checked={assistantOn}
+                onChange={(e) => {
+                  setAssistantOn(e.target.checked);
+                  setAssistantEnabled(e.target.checked);
+                }}
+              />
+            </label>
           </div>
 
           {/* AI section */}

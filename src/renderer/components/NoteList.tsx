@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useApp } from '../contexts/AppContext';
+import { useAssistant } from '../contexts/AssistantContext';
 import PasswordPrompt from './PasswordPrompt';
 import { buildNotePreview } from '../utils/mdUtils';
 
@@ -31,6 +32,7 @@ function NoteList({ width, onResizeStart }: NoteListProps) {
     sessionUnlocked,
     verifyPassword,
   } = useApp();
+  const { askAboutNote } = useAssistant();
   const { notes, selectedNoteId, viewMode } = state;
 
   const [contextMenu, setContextMenu] = useState<NoteContextMenu | null>(null);
@@ -61,6 +63,13 @@ function NoteList({ width, onResizeStart }: NoteListProps) {
     setContextMenu(null);
     await trashNote(noteId);
   }, [contextMenu, trashNote]);
+
+  const handleAskAi = useCallback(() => {
+    if (!contextMenu) return;
+    const note = notes.find((n) => n.id === contextMenu.noteId);
+    setContextMenu(null);
+    if (note) askAboutNote({ id: note.id, title: note.title || t('Untitled') });
+  }, [contextMenu, notes, askAboutNote, t]);
 
   const handleRestore = useCallback(async () => {
     if (!contextMenu) return;
@@ -207,6 +216,8 @@ function NoteList({ width, onResizeStart }: NoteListProps) {
           </NoteContextMenuPopup>
         ) : (
           <NoteContextMenuPopup x={contextMenu.x} y={contextMenu.y}>
+            <ContextMenuItem label={`🐟 ${t('Ask AI')}`} onClick={handleAskAi} />
+            <div className="my-1 border-t" style={{ borderColor: 'var(--border-secondary)' }} />
             <ContextMenuItem
               label={contextNote?.isPinned ? t('Unpin') : t('Pin')}
               onClick={handleTogglePin}

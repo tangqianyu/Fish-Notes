@@ -76,6 +76,28 @@ interface Window {
       ) => Promise<{ ok: true; reply: string } | { ok: false; error: string }>;
       suggestTitle: (content: string) => Promise<string>;
       polishText: (text: string) => Promise<string>;
+      chatStream: (payload: {
+        requestId: string;
+        messages: ChatMessage[];
+        noteContext?: string;
+      }) => Promise<void>;
+      abortChat: (requestId: string) => Promise<void>;
+      onChatChunk: (cb: (data: { requestId: string; delta: string }) => void) => () => void;
+      onChatDone: (cb: (data: { requestId: string; fullText: string }) => void) => () => void;
+      onChatError: (cb: (data: { requestId: string; message: string }) => void) => () => void;
+    };
+    chats: {
+      list: () => Promise<ChatData[]>;
+      create: (title?: string) => Promise<ChatData>;
+      getMessages: (chatId: string) => Promise<ChatMessageData[]>;
+      addMessage: (
+        chatId: string,
+        role: 'user' | 'assistant',
+        content: string,
+        noteId?: string | null,
+      ) => Promise<ChatMessageData>;
+      rename: (chatId: string, title: string) => Promise<void>;
+      delete: (chatId: string) => Promise<void>;
     };
   };
 }
@@ -84,4 +106,25 @@ interface AIConfig {
   token: string;
   model: string;
   claudePath?: string;
+}
+
+interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+interface ChatData {
+  id: string;
+  title: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface ChatMessageData {
+  id: string;
+  chatId: string;
+  role: 'user' | 'assistant';
+  content: string;
+  noteId: string | null;
+  createdAt: string;
 }

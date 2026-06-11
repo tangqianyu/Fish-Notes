@@ -7,6 +7,7 @@ import MarkdownPreview from './MarkdownPreview';
 import EditorToolbar from './EditorToolbar';
 import PolishDialog from './PolishDialog';
 import type { AppTheme } from './extensions/themes';
+import { useAssistant } from '../../contexts/AssistantContext';
 
 export type EditorMode = 'source' | 'preview' | 'split';
 
@@ -64,6 +65,7 @@ export default function MarkdownEditor({
 }: MarkdownEditorProps) {
   const { t } = useTranslation();
   const { theme } = useTheme();
+  const { askWithSelection } = useAssistant();
   const [mode, setMode] = useState<EditorMode>(readMode);
   const [content, setContent] = useState(defaultValue);
   const [toolbarVisible] = useState(readToolbar);
@@ -333,33 +335,49 @@ export default function MarkdownEditor({
       {polishSel &&
         bubblePos &&
         createPortal(
-          <button
-            type="button"
-            onMouseDown={(e) => {
-              // Prevent the editor from losing selection before our click handler fires.
-              e.preventDefault();
-            }}
-            onClick={handlePolishClick}
-            className="fixed z-[9999] flex items-center gap-1 px-2.5 py-1 rounded-full shadow-lg text-xs font-medium transition-transform hover:scale-105"
+          <div
+            className="fixed z-[9999] flex items-center gap-1.5"
             style={{
               top: bubblePos.top,
               left: bubblePos.left,
               transform:
                 bubblePos.placement === 'above' ? 'translate(-50%, -100%)' : 'translate(-50%, 0)',
-              backgroundColor: '#f97316',
-              color: 'white',
             }}
           >
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"
-              />
-            </svg>
-            {t('AI polish')}
-          </button>,
+            <button
+              type="button"
+              onMouseDown={(e) => {
+                // Prevent the editor from losing selection before our click handler fires.
+                e.preventDefault();
+              }}
+              onClick={handlePolishClick}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-full shadow-lg text-xs font-medium transition-transform hover:scale-105"
+              style={{ backgroundColor: '#f97316', color: 'white' }}
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"
+                />
+              </svg>
+              {t('AI polish')}
+            </button>
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => {
+                const text = polishSel.text;
+                setPolishSel(null);
+                askWithSelection(text);
+              }}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-full shadow-lg text-xs font-medium transition-transform hover:scale-105"
+              style={{ backgroundColor: 'var(--text-primary)', color: 'var(--bg-primary)' }}
+            >
+              🐟 {t('Ask Fish about selection')}
+            </button>
+          </div>,
           document.body,
         )}
 

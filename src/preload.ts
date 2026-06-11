@@ -60,5 +60,39 @@ contextBridge.exposeInMainWorld('api', {
       ipcRenderer.invoke('ai:testConnection', cfg),
     suggestTitle: (content: string) => ipcRenderer.invoke('ai:suggestTitle', content),
     polishText: (text: string) => ipcRenderer.invoke('ai:polishText', text),
+    chatStream: (payload: {
+      requestId: string;
+      messages: { role: 'user' | 'assistant'; content: string }[];
+      noteContext?: string;
+    }) => ipcRenderer.invoke('ai:chatStream', payload),
+    abortChat: (requestId: string) => ipcRenderer.invoke('ai:abortChat', requestId),
+    onChatChunk: (cb: (data: { requestId: string; delta: string }) => void) => {
+      const listener = (_e: unknown, data: { requestId: string; delta: string }) => cb(data);
+      ipcRenderer.on('ai:chat-chunk', listener);
+      return () => ipcRenderer.removeListener('ai:chat-chunk', listener);
+    },
+    onChatDone: (cb: (data: { requestId: string; fullText: string }) => void) => {
+      const listener = (_e: unknown, data: { requestId: string; fullText: string }) => cb(data);
+      ipcRenderer.on('ai:chat-done', listener);
+      return () => ipcRenderer.removeListener('ai:chat-done', listener);
+    },
+    onChatError: (cb: (data: { requestId: string; message: string }) => void) => {
+      const listener = (_e: unknown, data: { requestId: string; message: string }) => cb(data);
+      ipcRenderer.on('ai:chat-error', listener);
+      return () => ipcRenderer.removeListener('ai:chat-error', listener);
+    },
+  },
+  chats: {
+    list: () => ipcRenderer.invoke('chats:list'),
+    create: (title?: string) => ipcRenderer.invoke('chats:create', title),
+    getMessages: (chatId: string) => ipcRenderer.invoke('chats:getMessages', chatId),
+    addMessage: (
+      chatId: string,
+      role: 'user' | 'assistant',
+      content: string,
+      noteId?: string | null,
+    ) => ipcRenderer.invoke('chats:addMessage', chatId, role, content, noteId),
+    rename: (chatId: string, title: string) => ipcRenderer.invoke('chats:rename', chatId, title),
+    delete: (chatId: string) => ipcRenderer.invoke('chats:delete', chatId),
   },
 });

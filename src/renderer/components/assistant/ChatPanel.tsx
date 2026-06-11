@@ -1,0 +1,438 @@
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useAssistant, type UiMessage } from '../../contexts/AssistantContext';
+import { message } from '../message';
+import MarkdownPreview from '../editor/MarkdownPreview';
+
+function MessageBubble({
+  msg,
+  onSaveNote,
+}: {
+  msg: UiMessage;
+  onSaveNote?: (text: string) => void;
+}) {
+  const { t } = useTranslation();
+  const isUser = msg.role === 'user';
+  return (
+    <div
+      className="group flex flex-col"
+      style={{ alignItems: isUser ? 'flex-end' : 'flex-start', marginBottom: 12 }}
+    >
+      <div
+        style={{
+          maxWidth: '85%',
+          padding: isUser ? '8px 12px' : '6px 10px',
+          borderRadius: 12,
+          fontSize: 13,
+          lineHeight: 1.55,
+          backgroundColor: isUser ? 'var(--bg-active)' : 'var(--bg-secondary)',
+          color: 'var(--text-primary)',
+          wordBreak: 'break-word',
+        }}
+      >
+        {isUser ? (
+          <span style={{ whiteSpace: 'pre-wrap' }}>{msg.content}</span>
+        ) : (
+          <MarkdownPreview value={msg.content || (msg.streaming ? '…' : '')} />
+        )}
+      </div>
+      {!isUser && !msg.streaming && msg.content.trim() && (
+        <div
+          className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity"
+          style={{ marginTop: 4, fontSize: 11 }}
+        >
+          <button
+            onClick={() => {
+              navigator.clipboard.writeText(msg.content);
+              message.success(t('Copied'));
+            }}
+            style={{ color: 'var(--text-tertiary)' }}
+          >
+            ⧉ {t('Copy')}
+          </button>
+          {onSaveNote && (
+            <button onClick={() => onSaveNote(msg.content)} style={{ color: 'var(--text-tertiary)' }}>
+              📝 {t('Save as note')}
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function ChatPanel() {
+  const { t } = useTranslation();
+  const {
+    isOpen,
+    close,
+    chats,
+    tabs,
+    activeKey,
+    activeTab,
+    newTab,
+    selectTab,
+    closeTab,
+    detachNote,
+    selectChat,
+    deleteChat,
+    send,
+    abort,
+    saveAsNote,
+    prefill,
+    clearPrefill,
+  } = useAssistant();
+
+  const messages = activeTab.messages;
+  const boundNote = activeTab.boundNote;
+  const isStreaming = activeTab.isStreaming;
+
+  const [input, setInput] = useState('');
+  const [showHistory, setShowHistory] = useState(false);
+  const listRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  const isFree = !boundNote;
+
+  // reset composer text when switching tabs
+  useEffect(() => {
+    setInput('');
+  }, [activeKey]);
+
+  // adopt prefilled text (e.g. a quoted selection)
+  useEffect(() => {
+    if (prefill) {
+      setInput(prefill);
+      clearPrefill();
+      inputRef.current?.focus();
+    }
+  }, [prefill, clearPrefill]);
+
+  // autoscroll on new content
+  useEffect(() => {
+    if (listRef.current) listRef.current.scrollTop = listRef.current.scrollHeight;
+  }, [messages]);
+
+  const submit = useCallback(() => {
+    const text = input;
+    if (!text.trim() || isStreaming) return;
+    setInput('');
+    send(text);
+  }, [input, isStreaming, send]);
+
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      submit();
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        right: 24,
+        bottom: 88,
+        width: 380,
+        height: 560,
+        maxHeight: 'calc(100vh - 110px)',
+        zIndex: 9999,
+        display: 'flex',
+        flexDirection: 'column',
+        borderRadius: 14,
+        overflow: 'hidden',
+        backgroundColor: 'var(--card-bg)',
+        border: '1px solid var(--border-primary)',
+        boxShadow: '0 16px 48px rgba(0,0,0,0.28)',
+      }}
+    >
+      {/* Header */}
+      <div
+        className="flex items-center gap-2 px-3 py-2.5 shrink-0"
+        style={{ borderBottom: '1px solid var(--border-primary)' }}
+      >
+        <span style={{ fontSize: 16 }}>🐟</span>
+        <span style={{ fontWeight: 600, fontSize: 13, color: 'var(--text-primary)', flex: 1 }}>
+          {t('Fish Assistant')}
+        </span>
+        <HeaderBtn title={t('New chat')} onClick={newTab}>
+          ＋
+        </HeaderBtn>
+        <HeaderBtn title={t('History')} onClick={() => setShowHistory((v) => !v)}>
+          🕑
+        </HeaderBtn>
+        {isFree && messages.length > 0 && (
+          <HeaderBtn
+            title={t('Save conversation as note')}
+            onClick={() => saveAsNote(formatTranscript(messages))}
+          >
+            📝
+          </HeaderBtn>
+        )}
+        <HeaderBtn title={t('Close')} onClick={close}>
+          ✕
+        </HeaderBtn>
+      </div>
+
+      {/* Tab strip */}
+      {tabs.length > 1 && (
+        <div
+          className="flex items-center gap-1 px-2 py-1.5 overflow-x-auto shrink-0"
+          style={{ borderBottom: '1px solid var(--border-secondary)' }}
+        >
+          {tabs.map((tb) => {
+            const active = tb.key === activeKey;
+            return (
+              <div
+                key={tb.key}
+                onClick={() => selectTab(tb.key)}
+                className="group flex items-center gap-1 px-2 py-1 rounded-md cursor-pointer shrink-0"
+                style={{
+                  maxWidth: 140,
+                  fontSize: 12,
+                  backgroundColor: active ? 'var(--bg-active)' : 'var(--bg-secondary)',
+                  color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
+                }}
+              >
+                {tb.boundNote && <span>📄</span>}
+                {tb.isStreaming && <span>•</span>}
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {tb.title || (tb.boundNote ? tb.boundNote.title : t('New chat'))}
+                </span>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    closeTab(tb.key);
+                  }}
+                  className="opacity-60 hover:opacity-100"
+                  style={{ marginLeft: 2 }}
+                >
+                  ✕
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Context chip: only when this conversation is bound to a note */}
+      {boundNote && (
+        <div
+          className="flex items-center gap-2 px-3 py-2 shrink-0"
+          style={{ borderBottom: '1px solid var(--border-secondary)' }}
+        >
+          <span
+            className="flex items-center gap-1.5 rounded-md px-2 py-1"
+            style={{ backgroundColor: 'var(--bg-tertiary)', fontSize: 12, maxWidth: '100%' }}
+          >
+            <span>📄</span>
+            <span
+              style={{
+                color: 'var(--text-secondary)',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {boundNote.title || t('Untitled')}
+            </span>
+            <button
+              onClick={detachNote}
+              title={t('Detach note')}
+              style={{ color: 'var(--text-tertiary)', marginLeft: 2 }}
+            >
+              ✕
+            </button>
+          </span>
+        </div>
+      )}
+
+      {/* Body: history or messages */}
+      {showHistory ? (
+        <HistoryList
+          chats={chats}
+          currentChatId={activeTab.chatId}
+          onSelect={(id) => {
+            selectChat(id);
+            setShowHistory(false);
+          }}
+          onDelete={deleteChat}
+        />
+      ) : (
+        <div ref={listRef} className="flex-1 overflow-y-auto px-3 py-3">
+          {messages.length === 0 ? (
+            <EmptyState bound={!!boundNote} onPick={(text) => send(text)} />
+          ) : (
+            messages.map((m) => (
+              <MessageBubble
+                key={m.id}
+                msg={m}
+                onSaveNote={isFree ? (text) => saveAsNote(text) : undefined}
+              />
+            ))
+          )}
+        </div>
+      )}
+
+      {/* Composer */}
+      <div className="px-3 py-2.5 shrink-0" style={{ borderTop: '1px solid var(--border-primary)' }}>
+        <div
+          className="flex items-end gap-2 rounded-lg px-2 py-1.5"
+          style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-primary)' }}
+        >
+          <textarea
+            ref={inputRef}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={onKeyDown}
+            rows={1}
+            placeholder={boundNote ? t('Ask about this note…') : t('Ask anything…')}
+            className="flex-1 resize-none outline-none bg-transparent text-sm"
+            style={{ color: 'var(--text-primary)', maxHeight: 120 }}
+          />
+          {isStreaming ? (
+            <button
+              onClick={abort}
+              title={t('Stop')}
+              style={{ color: '#ef4444', fontSize: 16, lineHeight: 1 }}
+            >
+              ■
+            </button>
+          ) : (
+            <button
+              onClick={submit}
+              disabled={!input.trim()}
+              title={t('Send')}
+              style={{ color: input.trim() ? 'var(--text-active)' : 'var(--text-tertiary)', fontSize: 16 }}
+            >
+              ➤
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function HeaderBtn({
+  children,
+  onClick,
+  title,
+}: {
+  children: React.ReactNode;
+  onClick: () => void;
+  title: string;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      title={title}
+      className="rounded hover:opacity-70 transition-opacity"
+      style={{ fontSize: 13, color: 'var(--text-secondary)', padding: '2px 4px' }}
+    >
+      {children}
+    </button>
+  );
+}
+
+function EmptyState({ bound, onPick }: { bound: boolean; onPick: (text: string) => void }) {
+  const { t } = useTranslation();
+  const chip = {
+    fontSize: 12,
+    padding: '6px 10px',
+    borderRadius: 8,
+    backgroundColor: 'var(--bg-secondary)',
+    border: '1px solid var(--border-primary)',
+    color: 'var(--text-secondary)',
+    cursor: 'pointer',
+  } as const;
+  return (
+    <div className="flex flex-col items-center justify-center h-full text-center gap-3">
+      <div style={{ fontSize: 32 }}>🐟</div>
+      <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+        {bound ? t('Ask me anything about this note') : t('Hi, I am Fish — your note assistant')}
+      </div>
+      <div className="flex flex-wrap gap-2 justify-center" style={{ maxWidth: 280 }}>
+        {bound ? (
+          <>
+            <button style={chip} onClick={() => onPick(t('Summarize the key points of this note'))}>
+              {t('Summarize this note')}
+            </button>
+            <button style={chip} onClick={() => onPick(t('Extract the action items from this note'))}>
+              {t('Extract action items')}
+            </button>
+          </>
+        ) : (
+          <button style={chip} onClick={() => onPick(t('Help me brainstorm some ideas'))}>
+            {t('Brainstorm ideas')}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function HistoryList({
+  chats,
+  currentChatId,
+  onSelect,
+  onDelete,
+}: {
+  chats: ChatData[];
+  currentChatId: string | null;
+  onSelect: (id: string) => void;
+  onDelete: (id: string) => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <div className="flex-1 overflow-y-auto px-2 py-2">
+      {chats.length === 0 ? (
+        <div className="text-center text-xs" style={{ color: 'var(--text-tertiary)', marginTop: 24 }}>
+          {t('No conversations yet')}
+        </div>
+      ) : (
+        chats.map((c) => (
+          <div
+            key={c.id}
+            className="group flex items-center gap-2 px-2 py-2 rounded-lg cursor-pointer hover:opacity-90"
+            style={{
+              backgroundColor: c.id === currentChatId ? 'var(--bg-active)' : 'transparent',
+            }}
+            onClick={() => onSelect(c.id)}
+          >
+            <span
+              className="flex-1 text-sm"
+              style={{
+                color: 'var(--text-primary)',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {c.title || t('Untitled')}
+            </span>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(c.id);
+              }}
+              className="opacity-0 group-hover:opacity-100"
+              style={{ color: 'var(--text-tertiary)', fontSize: 12 }}
+            >
+              🗑
+            </button>
+          </div>
+        ))
+      )}
+    </div>
+  );
+}
+
+function formatTranscript(messages: UiMessage[]): string {
+  return messages
+    .filter((m) => m.content.trim())
+    .map((m) => (m.role === 'user' ? `**我：** ${m.content}` : m.content))
+    .join('\n\n---\n\n');
+}

@@ -1,6 +1,11 @@
-import { spawn, execSync } from 'node:child_process';
+import { spawn, execSync, type ChildProcess } from 'node:child_process';
 import { getRawDatabase } from '../database/index';
 import { stripMarkdownForFts } from '../markdown';
+
+export interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
 
 /**
  * Claude 集成层。
@@ -196,4 +201,163 @@ ${text}`;
     .replace(/^```(?:markdown|md)?\s*\n?/i, '')
     .replace(/\n?\s*```$/i, '')
     .trim();
+}
+
+// ---- 助手对话（流式）----
+
+const ASSISTANT_BASE_PROMPT =
+  '你是 Fish Notes 笔记应用里的 AI 助手，名叫 Fish。回答简洁友好，使用 Markdown 排版。';
+
+const NOTE_CONTENT_CAP = 12000;
+
+/** 把多轮对话拼成单条 prompt（无服务端会话，逐轮重发）。 */
+function buildChatPrompt(messages: ChatMessage[]): string {
+  if (messages.length <= 1) return messages[0]?.content ?? '';
+  const history = messages
+    .slice(0, -1)
+    .map((m) => `${m.role === 'user' ? '我' : '你'}：${m.content}`)
+    .join('\n\n');
+  const last = messages[messages.length - 1].content;
+  return `这是我们之前的对话：\n\n${history}\n\n请基于以上对话继续回答我接下来的问题：\n\n${last}`;
+}
+
+/** spawn 时挂在 requestId 上的进程，供 abort 用 */
+const activeChats = new Map<string, ChildProcess>();
+
+export interface ChatStreamCallbacks {
+  onDelta: (text: string) => void;
+  onDone: (fullText: string) => void;
+  onError: (message: string) => void;
+}
+
+/**
+ * 流式对话。messages 为完整对话历史（最后一条是本轮用户问题）。
+ * noteContext 存在时作为附加系统提示注入（问当前笔记场景）。
+ */
+export function chatStream(
+  requestId: string,
+  messages: ChatMessage[],
+  noteContext: string | undefined,
+  cb: ChatStreamCallbacks,
+): void {
+  const cfg = getAIConfig();
+  if (!cfg.token) {
+    cb.onError('Claude token 未配置，请在设置中粘贴 `claude setup-token` 生成的 token');
+    return;
+  }
+  if (!messages.length) {
+    cb.onError('对话内容为空');
+    return;
+  }
+
+  let systemPrompt = ASSISTANT_BASE_PROMPT;
+  if (noteContext && noteContext.trim()) {
+    const plain = stripMarkdownForFts(noteContext).slice(0, NOTE_CONTENT_CAP);
+    systemPrompt += `\n\n用户正在阅读下面这篇笔记，请优先基于它来回答；笔记之外的内容如实说明。\n\n<笔记内容>\n${plain}\n</笔记内容>`;
+  }
+
+  const bin = cfg.claudePath || 'claude';
+  const args = [
+    '-p',
+    '--output-format',
+    'stream-json',
+    '--include-partial-messages',
+    '--verbose',
+    '--append-system-prompt',
+    systemPrompt,
+  ];
+  if (cfg.model) args.push('--model', cfg.model);
+
+  const env: NodeJS.ProcessEnv = {
+    ...process.env,
+    PATH: getShellPath(),
+    CLAUDE_CODE_OAUTH_TOKEN: cfg.token,
+  };
+
+  let proc: ChildProcess;
+  try {
+    proc = spawn(bin, args, { env });
+  } catch (e) {
+    cb.onError(e instanceof Error ? e.message : String(e));
+    return;
+  }
+  activeChats.set(requestId, proc);
+
+  let streamed = '';
+  let resultText = '';
+  let stderr = '';
+  let buffer = '';
+
+  const handleLine = (line: string) => {
+    const trimmed = line.trim();
+    if (!trimmed) return;
+    let evt: Record<string, unknown>;
+    try {
+      evt = JSON.parse(trimmed);
+    } catch {
+      return; // 非 JSON 行（极少）直接忽略
+    }
+    if (evt.type === 'stream_event') {
+      const inner = evt.event as { type?: string; delta?: { type?: string; text?: string } };
+      if (inner?.type === 'content_block_delta' && inner.delta?.type === 'text_delta') {
+        const t = inner.delta.text ?? '';
+        streamed += t;
+        cb.onDelta(t);
+      }
+    } else if (evt.type === 'result' && typeof evt.result === 'string') {
+      resultText = evt.result;
+    } else if (evt.type === 'assistant') {
+      // 无 partial 时的兜底：从完整 assistant 消息里取文本
+      const msg = evt.message as { content?: { type?: string; text?: string }[] } | undefined;
+      const text = msg?.content
+        ?.filter((b) => b.type === 'text')
+        .map((b) => b.text ?? '')
+        .join('');
+      if (text && !streamed) resultText = text;
+    }
+  };
+
+  proc.stdout?.on('data', (d) => {
+    buffer += d.toString();
+    const lines = buffer.split('\n');
+    buffer = lines.pop() ?? '';
+    for (const line of lines) handleLine(line);
+  });
+  proc.stderr?.on('data', (d) => {
+    stderr += d.toString();
+  });
+
+  proc.on('error', (err) => {
+    activeChats.delete(requestId);
+    if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
+      cb.onError(
+        '找不到 claude CLI。请先执行：npm install -g @anthropic-ai/claude-code，或在设置里填写 claude 绝对路径',
+      );
+    } else {
+      cb.onError(err.message);
+    }
+  });
+
+  proc.on('close', (code) => {
+    if (buffer.trim()) handleLine(buffer);
+    activeChats.delete(requestId);
+    const final = streamed || resultText;
+    if (code === 0 || final) {
+      cb.onDone(final.trim());
+    } else {
+      cb.onError(`claude 退出码 ${code}: ${stderr || '(无输出)'}`);
+    }
+  });
+
+  proc.stdin?.write(buildChatPrompt(messages));
+  proc.stdin?.end();
+}
+
+/** 中断一个进行中的对话请求 */
+export function abortChat(requestId: string): void {
+  const proc = activeChats.get(requestId);
+  if (proc) {
+    proc.kill();
+    activeChats.delete(requestId);
+  }
 }

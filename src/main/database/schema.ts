@@ -34,3 +34,29 @@ export const noteTags = sqliteTable('note_tags', {
     .notNull()
     .references(() => tags.id, { onDelete: 'cascade' }),
 });
+
+// AI assistant conversations
+export const aiChats = sqliteTable('ai_chats', {
+  id: text('id').primaryKey(),
+  title: text('title').notNull().default(''),
+  createdAt: text('created_at')
+    .notNull()
+    .default(sql`(datetime('now'))`),
+  updatedAt: text('updated_at')
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
+export const aiMessages = sqliteTable('ai_messages', {
+  id: text('id').primaryKey(),
+  chatId: text('chat_id')
+    .notNull()
+    .references(() => aiChats.id, { onDelete: 'cascade' }),
+  role: text('role').notNull(), // 'user' | 'assistant'
+  content: text('content').notNull().default(''),
+  // optional: which note this turn was grounded on (current-note Q&A)
+  noteId: text('note_id'),
+  createdAt: text('created_at')
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});

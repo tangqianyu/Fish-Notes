@@ -19,8 +19,12 @@ import {
   testClaudeConnection,
   suggestTitle,
   polishText,
+  chatStream,
+  abortChat,
   type AIConfig,
+  type ChatMessage,
 } from '../ai';
+import * as chatsDb from '../database/chats';
 
 function getSetting(key: string): string | undefined {
   const rawDb = getRawDatabase();
@@ -116,7 +120,7 @@ export function registerIpcHandlers() {
 
       // Generate new credentials
       const newHash = hashPassword(newPassword);
-      const newKeySaltBuf = require('node:crypto').randomBytes(32);
+      const newKeySaltBuf = randomBytes(32);
       const newKeySalt = newKeySaltBuf.toString('base64');
       const newKey = deriveEncryptionKey(newPassword, newKeySalt);
 
@@ -192,4 +196,47 @@ export function registerIpcHandlers() {
   ipcMain.handle('ai:testConnection', (_event, cfg?: AIConfig) => testClaudeConnection(cfg));
   ipcMain.handle('ai:suggestTitle', (_event, content: string) => suggestTitle(content));
   ipcMain.handle('ai:polishText', (_event, text: string) => polishText(text));
+
+  // AI assistant — streaming chat. Pushes chunks back to the requesting webContents.
+  ipcMain.handle(
+    'ai:chatStream',
+    (
+      event,
+      payload: { requestId: string; messages: ChatMessage[]; noteContext?: string },
+    ) => {
+      const sender = event.sender;
+      const { requestId, messages, noteContext } = payload;
+      chatStream(requestId, messages, noteContext, {
+        onDelta: (text) => {
+          if (!sender.isDestroyed()) sender.send('ai:chat-chunk', { requestId, delta: text });
+        },
+        onDone: (fullText) => {
+          if (!sender.isDestroyed()) sender.send('ai:chat-done', { requestId, fullText });
+        },
+        onError: (message) => {
+          if (!sender.isDestroyed()) sender.send('ai:chat-error', { requestId, message });
+        },
+      });
+    },
+  );
+  ipcMain.handle('ai:abortChat', (_event, requestId: string) => abortChat(requestId));
+
+  // AI assistant — chat persistence
+  ipcMain.handle('chats:list', () => chatsDb.listChats());
+  ipcMain.handle('chats:create', (_event, title?: string) => chatsDb.createChat(title));
+  ipcMain.handle('chats:getMessages', (_event, chatId: string) => chatsDb.getChatMessages(chatId));
+  ipcMain.handle(
+    'chats:addMessage',
+    (
+      _event,
+      chatId: string,
+      role: 'user' | 'assistant',
+      content: string,
+      noteId?: string | null,
+    ) => chatsDb.addMessage(chatId, role, content, noteId),
+  );
+  ipcMain.handle('chats:rename', (_event, chatId: string, title: string) =>
+    chatsDb.renameChat(chatId, title),
+  );
+  ipcMain.handle('chats:delete', (_event, chatId: string) => chatsDb.deleteChat(chatId));
 }

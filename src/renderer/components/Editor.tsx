@@ -6,6 +6,7 @@ import PasswordPrompt from './PasswordPrompt';
 import { useAutoSave } from '../hooks/useAutoSave';
 import { useApp } from '../contexts/AppContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { message } from './message';
 
 interface EditorProps {
   noteId: string | null;
@@ -31,7 +32,6 @@ function Editor({ noteId, title, content, isLocked, onContentChange }: EditorPro
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [localTitle, setLocalTitle] = useState(title);
   const [suggestingTitle, setSuggestingTitle] = useState(false);
-  const [suggestError, setSuggestError] = useState<string | null>(null);
   const [titleCandidate, setTitleCandidate] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -49,7 +49,6 @@ function Editor({ noteId, title, content, isLocked, onContentChange }: EditorPro
     setLocalTitle(title);
     setDecryptedContent(null);
     setTitleCandidate(null);
-    setSuggestError(null);
   }
 
   // Fetch decrypted content when a locked note is opened and session is unlocked
@@ -144,19 +143,16 @@ function Editor({ noteId, title, content, isLocked, onContentChange }: EditorPro
     if (!noteId || suggestingTitle) return;
     const source = isLocked ? (decryptedContent ?? '') : lastContentRef.current || content;
     if (!source.trim()) {
-      setSuggestError(t('Note is empty'));
-      setTimeout(() => setSuggestError(null), 3000);
+      message.warning(t('Note is empty'));
       return;
     }
     setSuggestingTitle(true);
-    setSuggestError(null);
     setTitleCandidate(null);
     try {
       const suggested = await window.api.ai.suggestTitle(source);
       if (suggested) setTitleCandidate(suggested);
     } catch (e) {
-      setSuggestError(e instanceof Error ? e.message : String(e));
-      setTimeout(() => setSuggestError(null), 5000);
+      message.error(e instanceof Error ? e.message : String(e));
     } finally {
       setSuggestingTitle(false);
     }
@@ -293,8 +289,8 @@ function Editor({ noteId, title, content, isLocked, onContentChange }: EditorPro
                   onClick={handleSuggestTitle}
                   disabled={suggestingTitle}
                   className="mr-3 p-1.5 rounded transition-colors hover:opacity-70 disabled:opacity-50"
-                  style={{ color: suggestError ? '#ef4444' : 'var(--text-tertiary)' }}
-                  title={suggestError ?? t('Suggest title with AI')}
+                  style={{ color: 'var(--text-tertiary)' }}
+                  title={t('Suggest title with AI')}
                 >
                   {suggestingTitle ? (
                     <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">

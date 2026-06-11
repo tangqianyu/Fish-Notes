@@ -1,8 +1,10 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, Fragment } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../contexts/ThemeContext';
 import { useApp } from '../contexts/AppContext';
+import { message } from './message';
+import { modal } from './modal';
 
 interface SettingsProps {
   onClose: () => void;
@@ -13,10 +15,26 @@ const languages = [
   { id: 'en', label: 'English' },
 ];
 
-const CLAUDE_MODELS: { value: string; labelKey: string }[] = [
-  { value: 'claude-opus-4-7', labelKey: 'Opus 4.7 (strongest, deep analysis)' },
-  { value: 'claude-sonnet-4-6', labelKey: 'Sonnet 4.6 (balanced, default)' },
-  { value: 'claude-haiku-4-5-20251001', labelKey: 'Haiku 4.5 (fastest, short summaries)' },
+const CLAUDE_MODEL_GROUPS: {
+  labelKey: string;
+  models: { value: string; labelKey: string }[];
+}[] = [
+  {
+    labelKey: '',
+    models: [
+      { value: 'claude-fable-5', labelKey: 'Fable 5 (most capable, premium)' },
+      { value: 'claude-opus-4-8', labelKey: 'Opus 4.8 (strongest, deep analysis)' },
+      { value: 'claude-sonnet-4-6', labelKey: 'Sonnet 4.6 (balanced, default)' },
+      { value: 'claude-haiku-4-5-20251001', labelKey: 'Haiku 4.5 (fastest, short summaries)' },
+    ],
+  },
+  {
+    labelKey: 'Others',
+    models: [
+      { value: 'claude-opus-4-7', labelKey: 'Opus 4.7' },
+      { value: 'claude-opus-4-6', labelKey: 'Opus 4.6' },
+    ],
+  },
 ];
 
 function Settings({ onClose }: SettingsProps) {
@@ -29,18 +47,13 @@ function Settings({ onClose }: SettingsProps) {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [oldPassword, setOldPassword] = useState('');
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   // AI config state
   const [aiToken, setAiToken] = useState('');
   const [aiModel, setAiModel] = useState('claude-sonnet-4-6');
   const [aiClaudePath, setAiClaudePath] = useState('');
-  const [aiSaved, setAiSaved] = useState(false);
   const [aiTesting, setAiTesting] = useState(false);
-  const [aiTestResult, setAiTestResult] = useState<
-    { ok: true; reply: string } | { ok: false; error: string } | null
-  >(null);
 
   useEffect(() => {
     window.api.ai.getConfig().then((cfg) => {
@@ -60,22 +73,29 @@ function Settings({ onClose }: SettingsProps) {
 
   const handleSaveAI = useCallback(async () => {
     await persistAI();
-    setAiSaved(true);
-    setTimeout(() => setAiSaved(false), 2000);
-  }, [persistAI]);
+    message.success(t('Saved'));
+  }, [persistAI, t]);
 
   const handleTestAI = useCallback(async () => {
-    await persistAI();
     setAiTesting(true);
-    setAiTestResult(null);
     try {
-      const r = await window.api.ai.testConnection();
-      setAiTestResult(r);
-      setTimeout(() => setAiTestResult(null), r.ok ? 3000 : 8000);
+      const r = await window.api.ai.testConnection({
+        token: aiToken.trim(),
+        model: aiModel.trim() || 'claude-sonnet-4-6',
+        claudePath: aiClaudePath.trim() || undefined,
+      });
+      if (r.ok) {
+        message.success(`${t('Connected. Claude replied:')} ${r.reply}`);
+      } else {
+        modal.error({
+          title: t('Connection failed'),
+          content: <pre className="whitespace-pre-wrap break-all">{r.error}</pre>,
+        });
+      }
     } finally {
       setAiTesting(false);
     }
-  }, [persistAI]);
+  }, [aiToken, aiModel, aiClaudePath, t]);
 
   const themes = [
     { id: 'light' as const, label: t('Light'), preview: 'bg-white border-gray-200' },
@@ -89,16 +109,15 @@ function Settings({ onClose }: SettingsProps) {
     setPassword('');
     setConfirmPassword('');
     setOldPassword('');
-    setError('');
   }, []);
 
   const handleSetPassword = useCallback(async () => {
     if (!password) {
-      setError(t('Please enter a password'));
+      message.error(t('Please enter a password'));
       return;
     }
     if (password !== confirmPassword) {
-      setError(t('Passwords do not match'));
+      message.error(t('Passwords do not match'));
       return;
     }
     setLoading(true);
@@ -106,42 +125,44 @@ function Settings({ onClose }: SettingsProps) {
     await refreshEncryptionState();
     resetForm();
     setLoading(false);
+    message.success(t('Password set'));
   }, [password, confirmPassword, refreshEncryptionState, resetForm, t]);
 
   const handleChangePassword = useCallback(async () => {
     if (!oldPassword) {
-      setError(t('Please enter current password'));
+      message.error(t('Please enter current password'));
       return;
     }
     if (!password) {
-      setError(t('Please enter new password'));
+      message.error(t('Please enter new password'));
       return;
     }
     if (password !== confirmPassword) {
-      setError(t('Passwords do not match'));
+      message.error(t('Passwords do not match'));
       return;
     }
     setLoading(true);
     const ok = await window.api.encryption.changePassword(oldPassword, password);
     if (!ok) {
-      setError(t('Current password is incorrect'));
+      message.error(t('Current password is incorrect'));
       setLoading(false);
       return;
     }
     await refreshEncryptionState();
     resetForm();
     setLoading(false);
+    message.success(t('Password changed'));
   }, [oldPassword, password, confirmPassword, refreshEncryptionState, resetForm, t]);
 
   const handleRemovePassword = useCallback(async () => {
     if (!password) {
-      setError(t('Please enter a password'));
+      message.error(t('Please enter a password'));
       return;
     }
     setLoading(true);
     const ok = await window.api.encryption.removePassword(password);
     if (!ok) {
-      setError(t('Incorrect password'));
+      message.error(t('Incorrect password'));
       setLoading(false);
       return;
     }
@@ -149,6 +170,7 @@ function Settings({ onClose }: SettingsProps) {
     await refreshNotes();
     resetForm();
     setLoading(false);
+    message.success(t('Encryption removed'));
   }, [password, refreshEncryptionState, refreshNotes, resetForm, t]);
 
   const handleLanguageChange = useCallback(
@@ -163,12 +185,10 @@ function Settings({ onClose }: SettingsProps) {
     <div
       className="fixed inset-0 z-50 flex items-center justify-center"
       style={{ backgroundColor: 'var(--overlay-bg)' }}
-      onClick={onClose}
     >
       <div
         className="w-[400px] max-h-[88vh] rounded-xl shadow-2xl flex flex-col"
         style={{ backgroundColor: 'var(--card-bg)' }}
-        onClick={(e) => e.stopPropagation()}
       >
         {/* Header (sticky-feeling: stays visible while body scrolls) */}
         <div
@@ -306,7 +326,6 @@ function Settings({ onClose }: SettingsProps) {
                       value={password}
                       onChange={(e) => {
                         setPassword(e.target.value);
-                        setError('');
                       }}
                       placeholder={t('Set password')}
                       autoFocus
@@ -322,7 +341,6 @@ function Settings({ onClose }: SettingsProps) {
                       value={confirmPassword}
                       onChange={(e) => {
                         setConfirmPassword(e.target.value);
-                        setError('');
                       }}
                       placeholder={t('Confirm password')}
                       className="px-3 py-2 rounded-lg border text-sm outline-none"
@@ -341,7 +359,6 @@ function Settings({ onClose }: SettingsProps) {
                       value={oldPassword}
                       onChange={(e) => {
                         setOldPassword(e.target.value);
-                        setError('');
                       }}
                       placeholder={t('Current password')}
                       autoFocus
@@ -357,7 +374,6 @@ function Settings({ onClose }: SettingsProps) {
                       value={password}
                       onChange={(e) => {
                         setPassword(e.target.value);
-                        setError('');
                       }}
                       placeholder={t('New password')}
                       className="px-3 py-2 rounded-lg border text-sm outline-none"
@@ -372,7 +388,6 @@ function Settings({ onClose }: SettingsProps) {
                       value={confirmPassword}
                       onChange={(e) => {
                         setConfirmPassword(e.target.value);
-                        setError('');
                       }}
                       placeholder={t('Confirm new password')}
                       className="px-3 py-2 rounded-lg border text-sm outline-none"
@@ -390,7 +405,6 @@ function Settings({ onClose }: SettingsProps) {
                     value={password}
                     onChange={(e) => {
                       setPassword(e.target.value);
-                      setError('');
                     }}
                     placeholder={t('Enter password to confirm removal')}
                     autoFocus
@@ -401,12 +415,6 @@ function Settings({ onClose }: SettingsProps) {
                       color: 'var(--text-primary)',
                     }}
                   />
-                )}
-
-                {error && (
-                  <p className="text-xs" style={{ color: '#ef4444' }}>
-                    {error}
-                  </p>
                 )}
 
                 <div className="flex gap-2 mt-1">
@@ -467,7 +475,6 @@ function Settings({ onClose }: SettingsProps) {
                   value={aiToken}
                   onChange={(e) => {
                     setAiToken(e.target.value);
-                    setAiTestResult(null);
                   }}
                   placeholder="sk-ant-oat01-..."
                   className="w-full px-3 py-2 rounded-lg border text-sm outline-none font-mono"
@@ -487,7 +494,6 @@ function Settings({ onClose }: SettingsProps) {
                   value={aiModel}
                   onChange={(e) => {
                     setAiModel(e.target.value);
-                    setAiTestResult(null);
                   }}
                   className="w-full px-3 py-2 rounded-lg border text-sm outline-none"
                   style={{
@@ -496,11 +502,20 @@ function Settings({ onClose }: SettingsProps) {
                     color: 'var(--text-primary)',
                   }}
                 >
-                  {CLAUDE_MODELS.map((m) => (
-                    <option key={m.value} value={m.value}>
-                      {t(m.labelKey)}
-                    </option>
-                  ))}
+                  {CLAUDE_MODEL_GROUPS.map((group) => {
+                    const options = group.models.map((m) => (
+                      <option key={m.value} value={m.value}>
+                        {t(m.labelKey)}
+                      </option>
+                    ));
+                    return group.labelKey ? (
+                      <optgroup key={group.labelKey} label={t(group.labelKey)}>
+                        {options}
+                      </optgroup>
+                    ) : (
+                      <Fragment key="latest">{options}</Fragment>
+                    );
+                  })}
                 </select>
               </div>
 
@@ -514,7 +529,6 @@ function Settings({ onClose }: SettingsProps) {
                     value={aiClaudePath}
                     onChange={(e) => {
                       setAiClaudePath(e.target.value);
-                      setAiTestResult(null);
                     }}
                     placeholder={t('Leave empty to auto-detect')}
                     className="w-full px-3 py-2 rounded-lg border text-sm outline-none font-mono"
@@ -546,36 +560,7 @@ function Settings({ onClose }: SettingsProps) {
                 >
                   {aiTesting ? t('Testing...') : t('Test connection')}
                 </button>
-                {aiSaved && (
-                  <span className="text-xs" style={{ color: '#10b981' }}>
-                    {t('Saved')}
-                  </span>
-                )}
               </div>
-
-              {aiTestResult && (
-                <div
-                  className="text-xs px-3 py-2 rounded"
-                  style={{
-                    backgroundColor: aiTestResult.ok
-                      ? 'rgba(16, 185, 129, 0.1)'
-                      : 'rgba(239, 68, 68, 0.1)',
-                    color: aiTestResult.ok ? '#10b981' : '#ef4444',
-                  }}
-                >
-                  {aiTestResult.ok ? (
-                    <>
-                      ✅ {t('Connected. Claude replied:')}{' '}
-                      <code className="font-mono">{aiTestResult.reply}</code>
-                    </>
-                  ) : (
-                    <>
-                      <div className="font-semibold mb-1">❌ {t('Connection failed')}</div>
-                      <pre className="whitespace-pre-wrap break-all">{aiTestResult.error}</pre>
-                    </>
-                  )}
-                </div>
-              )}
             </div>
           </div>
 

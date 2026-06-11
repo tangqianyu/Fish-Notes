@@ -189,7 +189,7 @@ export function registerIpcHandlers() {
   // AI
   ipcMain.handle('ai:getConfig', () => getAIConfig());
   ipcMain.handle('ai:setConfig', (_event, cfg: AIConfig) => setAIConfig(cfg));
-  ipcMain.handle('ai:testConnection', () => testClaudeConnection());
+  ipcMain.handle('ai:testConnection', (_event, cfg?: AIConfig) => testClaudeConnection(cfg));
   ipcMain.handle('ai:suggestTitle', (_event, content: string) => suggestTitle(content));
   ipcMain.handle('ai:polishText', (_event, text: string) => polishText(text));
 }

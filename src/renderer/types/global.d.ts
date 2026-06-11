@@ -71,7 +71,9 @@ interface Window {
     ai: {
       getConfig: () => Promise<AIConfig>;
       setConfig: (cfg: AIConfig) => Promise<void>;
-      testConnection: () => Promise<{ ok: true; reply: string } | { ok: false; error: string }>;
+      testConnection: (
+        cfg?: AIConfig,
+      ) => Promise<{ ok: true; reply: string } | { ok: false; error: string }>;
       suggestTitle: (content: string) => Promise<string>;
       polishText: (text: string) => Promise<string>;
     };

@@ -72,10 +72,10 @@ function getShellPath(): string {
 
 function runClaude(
   prompt: string,
-  opts: { model?: string; systemPrompt?: string } = {},
+  opts: { model?: string; systemPrompt?: string; configOverride?: AIConfig } = {},
 ): Promise<string> {
   return new Promise((resolve, reject) => {
-    const cfg = getAIConfig();
+    const cfg = opts.configOverride ?? getAIConfig();
     if (!cfg.token) {
       return reject(
         new Error('Claude token 未配置，请在设置中粘贴 `claude setup-token` 生成的 token'),
@@ -131,11 +131,12 @@ function runClaude(
   });
 }
 
-export async function testClaudeConnection(): Promise<
-  { ok: true; reply: string } | { ok: false; error: string }
-> {
+export async function testClaudeConnection(
+  override?: AIConfig,
+): Promise<{ ok: true; reply: string } | { ok: false; error: string }> {
   try {
-    const reply = await runClaude('只回复 "PONG" 两个字母，不要其他内容。');
+    const configOverride = override ? { ...DEFAULT_CONFIG, ...override } : undefined;
+    const reply = await runClaude('只回复 "PONG" 两个字母，不要其他内容。', { configOverride });
     return { ok: true, reply };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : String(e) };

@@ -85,6 +85,7 @@ interface AppContextValue {
   deleteTag: (tagId: string) => Promise<void>;
   renameTag: (tagId: string, newName: string) => Promise<void>;
   togglePinTag: (tagId: string) => Promise<void>;
+  reorderTags: (orderedIds: string[]) => Promise<void>;
   togglePinNote: (id: string) => Promise<void>;
   encryptionReady: boolean;
   sessionUnlocked: boolean;
@@ -269,6 +270,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [refreshTags],
   );
 
+  const reorderTags = useCallback(
+    async (orderedIds: string[]) => {
+      await window.api.tags.reorder(orderedIds);
+      await refreshTags();
+    },
+    [refreshTags],
+  );
+
   const togglePinNote = useCallback(
     async (id: string) => {
       const newPinned = await window.api.notes.togglePin(id);
@@ -324,6 +333,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         deleteTag,
         renameTag,
         togglePinTag,
+        reorderTags,
         togglePinNote,
         encryptionReady,
         sessionUnlocked,

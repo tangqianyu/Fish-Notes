@@ -24,6 +24,7 @@ export const tags = sqliteTable('tags', {
   name: text('name').notNull().unique(),
   parentId: text('parent_id'),
   isPinned: integer('is_pinned', { mode: 'boolean' }).notNull().default(false),
+  sortOrder: integer('sort_order').notNull().default(0),
 });
 
 export const noteTags = sqliteTable('note_tags', {

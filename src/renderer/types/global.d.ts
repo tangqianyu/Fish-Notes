@@ -15,6 +15,7 @@ interface TagData {
   parentId: string | null;
   noteCount: number;
   isPinned: boolean;
+  sortOrder: number;
 }
 
 interface Window {
@@ -54,6 +55,7 @@ interface Window {
       delete: (tagId: string) => Promise<string[]>;
       rename: (tagId: string, newName: string) => Promise<string | null>;
       togglePin: (tagId: string) => Promise<boolean>;
+      reorder: (orderedIds: string[]) => Promise<void>;
     };
     search: {
       notes: (query: string) => Promise<NoteData[]>;

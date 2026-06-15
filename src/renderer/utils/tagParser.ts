@@ -39,7 +39,20 @@ export interface TagTreeNode {
   fullName: string;
   noteCount: number;
   isPinned: boolean;
+  sortOrder: number;
   children: TagTreeNode[];
+}
+
+// Sibling ordering: pinned first, then manual sortOrder, then name as a stable fallback.
+function sortSiblings(nodes: TagTreeNode[]): void {
+  nodes.sort((a, b) => {
+    if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1;
+    if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
+    return a.fullName.localeCompare(b.fullName);
+  });
+  for (const n of nodes) {
+    if (n.children.length > 0) sortSiblings(n.children);
+  }
 }
 
 export function buildTagTree(tags: TagData[]): TagTreeNode[] {
@@ -57,6 +70,7 @@ export function buildTagTree(tags: TagData[]): TagTreeNode[] {
       fullName: tag.name,
       noteCount: tag.noteCount,
       isPinned: tag.isPinned,
+      sortOrder: tag.sortOrder,
       children: [],
     };
     nodeMap.set(tag.name, node);
@@ -72,11 +86,6 @@ export function buildTagTree(tags: TagData[]): TagTreeNode[] {
     roots.push(node);
   }
 
-  // Pinned tags first, then alphabetical
-  roots.sort((a, b) => {
-    if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1;
-    return a.fullName.localeCompare(b.fullName);
-  });
-
+  sortSiblings(roots);
   return roots;
 }

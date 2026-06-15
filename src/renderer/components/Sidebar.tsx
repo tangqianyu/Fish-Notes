@@ -18,7 +18,7 @@ interface ContextMenu {
 
 function Sidebar({ width, onResizeStart, onSearchClick, onSettingsClick }: SidebarProps) {
   const { t } = useTranslation();
-  const { state, setViewMode, deleteTag, renameTag, togglePinTag } = useApp();
+  const { state, setViewMode, deleteTag, renameTag, togglePinTag, reorderTags } = useApp();
   const { viewMode, tags, selectedTagId } = state;
 
   const tagTree = useMemo(() => buildTagTree(tags), [tags]);
@@ -26,6 +26,27 @@ function Sidebar({ width, onResizeStart, onSearchClick, onSettingsClick }: Sideb
   const [contextMenu, setContextMenu] = useState<ContextMenu | null>(null);
   const [editingTagId, setEditingTagId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
+
+  // drag-to-reorder (within the same sibling group)
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [dropHint, setDropHint] = useState<{ id: string; before: boolean } | null>(null);
+
+  const handleDrop = useCallback(
+    (siblings: TagTreeNode[], targetId: string, before: boolean) => {
+      const id = dragId;
+      setDragId(null);
+      setDropHint(null);
+      if (!id || id === targetId) return;
+      // only reorder within the same level (siblings)
+      if (!siblings.some((s) => s.id === id)) return;
+      const ids = siblings.map((s) => s.id).filter((x) => x !== id);
+      const ti = ids.indexOf(targetId);
+      if (ti === -1) return;
+      ids.splice(before ? ti : ti + 1, 0, id);
+      reorderTags(ids);
+    },
+    [dragId, reorderTags],
+  );
 
   // Close context menu on outside click
   useEffect(() => {
@@ -142,6 +163,15 @@ function Sidebar({ width, onResizeStart, onSearchClick, onSettingsClick }: Sideb
             onEditingNameChange={setEditingName}
             onRenameSubmit={handleRenameSubmit}
             depth={0}
+            dragId={dragId}
+            dropHint={dropHint}
+            onDragStart={setDragId}
+            onDragOverNode={setDropHint}
+            onDropNode={handleDrop}
+            onDragEnd={() => {
+              setDragId(null);
+              setDropHint(null);
+            }}
           />
         )}
       </nav>
@@ -192,6 +222,15 @@ function Sidebar({ width, onResizeStart, onSearchClick, onSettingsClick }: Sideb
   );
 }
 
+interface DragProps {
+  dragId: string | null;
+  dropHint: { id: string; before: boolean } | null;
+  onDragStart: (id: string) => void;
+  onDragOverNode: (hint: { id: string; before: boolean } | null) => void;
+  onDropNode: (siblings: TagTreeNode[], targetId: string, before: boolean) => void;
+  onDragEnd: () => void;
+}
+
 function TagTreeList({
   nodes,
   selectedTagId,
@@ -202,6 +241,12 @@ function TagTreeList({
   onEditingNameChange,
   onRenameSubmit,
   depth,
+  dragId,
+  dropHint,
+  onDragStart,
+  onDragOverNode,
+  onDropNode,
+  onDragEnd,
 }: {
   nodes: TagTreeNode[];
   selectedTagId: string | null;
@@ -212,56 +257,88 @@ function TagTreeList({
   onEditingNameChange: (name: string) => void;
   onRenameSubmit: (node: TagTreeNode) => void;
   depth: number;
-}) {
+} & DragProps) {
+  const sameGroup = dragId != null && nodes.some((n) => n.id === dragId);
   return (
     <>
-      {nodes.map((node) => (
-        <div key={node.id}>
-          {editingTagId === node.id ? (
-            <RenameInput
-              value={editingName}
-              onChange={onEditingNameChange}
-              onSubmit={() => onRenameSubmit(node)}
-              depth={depth}
-            />
-          ) : (
-            <button
-              onClick={() => onSelect(node.id)}
-              onContextMenu={(e) => onContextMenu(e, node)}
-              className="w-full flex items-center justify-between px-2 py-1.5 rounded-md text-sm transition-colors"
-              style={{
-                paddingLeft: `${8 + depth * 16}px`,
-                backgroundColor: selectedTagId === node.id ? 'var(--bg-active)' : 'transparent',
-                color: selectedTagId === node.id ? 'var(--text-active)' : 'var(--text-secondary)',
-              }}
-            >
-              <span className="flex items-center truncate">
-                {node.isPinned && <span className="mr-1 text-xs opacity-60">📌</span>}
-                <span className="mr-1.5" style={{ color: 'var(--text-tertiary)' }}>
-                  #
+      {nodes.map((node) => {
+        const hinted = sameGroup && dropHint?.id === node.id;
+        return (
+          <div key={node.id}>
+            {editingTagId === node.id ? (
+              <RenameInput
+                value={editingName}
+                onChange={onEditingNameChange}
+                onSubmit={() => onRenameSubmit(node)}
+                depth={depth}
+              />
+            ) : (
+              <button
+                draggable
+                onDragStart={(e) => {
+                  e.dataTransfer.effectAllowed = 'move';
+                  onDragStart(node.id);
+                }}
+                onDragOver={(e) => {
+                  if (!sameGroup || node.id === dragId) return;
+                  e.preventDefault();
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  const before = e.clientY < rect.top + rect.height / 2;
+                  onDragOverNode({ id: node.id, before });
+                }}
+                onDrop={(e) => {
+                  if (!sameGroup) return;
+                  e.preventDefault();
+                  onDropNode(nodes, node.id, dropHint?.id === node.id ? dropHint.before : true);
+                }}
+                onDragEnd={onDragEnd}
+                onClick={() => onSelect(node.id)}
+                onContextMenu={(e) => onContextMenu(e, node)}
+                className="w-full flex items-center justify-between px-2 py-1.5 rounded-md text-sm transition-colors"
+                style={{
+                  paddingLeft: `${8 + depth * 16}px`,
+                  backgroundColor: selectedTagId === node.id ? 'var(--bg-active)' : 'transparent',
+                  color: selectedTagId === node.id ? 'var(--text-active)' : 'var(--text-secondary)',
+                  boxShadow: hinted
+                    ? `inset 0 ${dropHint?.before ? '2px' : '-2px'} 0 0 var(--text-active)`
+                    : undefined,
+                  opacity: dragId === node.id ? 0.4 : 1,
+                }}
+              >
+                <span className="flex items-center truncate">
+                  {node.isPinned && <span className="mr-1 text-xs opacity-60">📌</span>}
+                  <span className="mr-1.5" style={{ color: 'var(--text-tertiary)' }}>
+                    #
+                  </span>
+                  {node.name}
                 </span>
-                {node.name}
-              </span>
-              <span className="text-xs ml-1" style={{ color: 'var(--text-tertiary)' }}>
-                {node.noteCount}
-              </span>
-            </button>
-          )}
-          {node.children.length > 0 && (
-            <TagTreeList
-              nodes={node.children}
-              selectedTagId={selectedTagId}
-              onSelect={onSelect}
-              onContextMenu={onContextMenu}
-              editingTagId={editingTagId}
-              editingName={editingName}
-              onEditingNameChange={onEditingNameChange}
-              onRenameSubmit={onRenameSubmit}
-              depth={depth + 1}
-            />
-          )}
-        </div>
-      ))}
+                <span className="text-xs ml-1" style={{ color: 'var(--text-tertiary)' }}>
+                  {node.noteCount}
+                </span>
+              </button>
+            )}
+            {node.children.length > 0 && (
+              <TagTreeList
+                nodes={node.children}
+                selectedTagId={selectedTagId}
+                onSelect={onSelect}
+                onContextMenu={onContextMenu}
+                editingTagId={editingTagId}
+                editingName={editingName}
+                onEditingNameChange={onEditingNameChange}
+                onRenameSubmit={onRenameSubmit}
+                depth={depth + 1}
+                dragId={dragId}
+                dropHint={dropHint}
+                onDragStart={onDragStart}
+                onDragOverNode={onDragOverNode}
+                onDropNode={onDropNode}
+                onDragEnd={onDragEnd}
+              />
+            )}
+          </div>
+        );
+      })}
     </>
   );
 }

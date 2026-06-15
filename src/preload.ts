@@ -36,6 +36,7 @@ contextBridge.exposeInMainWorld('api', {
     delete: (tagId: string) => ipcRenderer.invoke('tags:delete', tagId),
     rename: (tagId: string, newName: string) => ipcRenderer.invoke('tags:rename', tagId, newName),
     togglePin: (tagId: string) => ipcRenderer.invoke('tags:togglePin', tagId),
+    reorder: (orderedIds: string[]) => ipcRenderer.invoke('tags:reorder', orderedIds),
   },
   search: {
     notes: (query: string) => ipcRenderer.invoke('search:notes', query),

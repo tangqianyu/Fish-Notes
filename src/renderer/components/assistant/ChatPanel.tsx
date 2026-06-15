@@ -4,6 +4,38 @@ import { useAssistant, type UiMessage } from '../../contexts/AssistantContext';
 import { message } from '../message';
 import MarkdownPreview from '../editor/MarkdownPreview';
 
+const GEO_KEY = 'fish-notes:assistant-panel';
+const MIN_W = 300;
+const MIN_H = 360;
+
+interface Geo {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+function clampGeo(g: Geo): Geo {
+  const w = Math.min(Math.max(MIN_W, g.w), window.innerWidth - 16);
+  const h = Math.min(Math.max(MIN_H, g.h), window.innerHeight - 16);
+  const x = Math.min(Math.max(8, g.x), window.innerWidth - w - 8);
+  const y = Math.min(Math.max(8, g.y), window.innerHeight - h - 8);
+  return { x, y, w, h };
+}
+
+function loadGeo(): Geo {
+  try {
+    const raw = localStorage.getItem(GEO_KEY);
+    if (raw) return clampGeo(JSON.parse(raw));
+  } catch {
+    /* ignore */
+  }
+  const w = 380;
+  const h = 560;
+  // default: docked bottom-right, just above the floating ball
+  return clampGeo({ x: window.innerWidth - w - 24, y: window.innerHeight - h - 88, w, h });
+}
+
 function MessageBubble({
   msg,
   onSaveNote,
@@ -127,17 +159,85 @@ export default function ChatPanel() {
     }
   };
 
+  // ---- geometry: drag (header) + resize (top-left handle) ----
+  const [geo, setGeo] = useState<Geo>(loadGeo);
+  const dragRef = useRef<{ dx: number; dy: number } | null>(null);
+  const resizeRef = useRef<{ l: number; t: number; r: number; b: number; dir: string } | null>(
+    null,
+  );
+
+  useEffect(() => {
+    const onResize = () => setGeo((g) => clampGeo(g));
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  const persist = useCallback((g: Geo) => {
+    localStorage.setItem(GEO_KEY, JSON.stringify(g));
+  }, []);
+
+  const onHeaderPointerDown = useCallback(
+    (e: React.PointerEvent) => {
+      if ((e.target as HTMLElement).closest('button')) return; // let header buttons work
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+      dragRef.current = { dx: e.clientX - geo.x, dy: e.clientY - geo.y };
+    },
+    [geo],
+  );
+  const onHeaderPointerMove = useCallback((e: React.PointerEvent) => {
+    const d = dragRef.current;
+    if (!d) return;
+    setGeo((g) => clampGeo({ ...g, x: e.clientX - d.dx, y: e.clientY - d.dy }));
+  }, []);
+  const onHeaderPointerUp = useCallback(() => {
+    if (dragRef.current) {
+      dragRef.current = null;
+      setGeo((g) => {
+        persist(g);
+        return g;
+      });
+    }
+  }, [persist]);
+
+  const onResizePointerDown = useCallback(
+    (dir: string) => (e: React.PointerEvent) => {
+      e.stopPropagation();
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+      resizeRef.current = { l: geo.x, t: geo.y, r: geo.x + geo.w, b: geo.y + geo.h, dir };
+    },
+    [geo],
+  );
+  const onResizePointerMove = useCallback((e: React.PointerEvent) => {
+    const s = resizeRef.current;
+    if (!s) return;
+    let { l, t, r, b } = s;
+    const { dir } = s;
+    if (dir.includes('e')) r = Math.min(window.innerWidth - 8, Math.max(l + MIN_W, e.clientX));
+    if (dir.includes('w')) l = Math.max(8, Math.min(r - MIN_W, e.clientX));
+    if (dir.includes('s')) b = Math.min(window.innerHeight - 8, Math.max(t + MIN_H, e.clientY));
+    if (dir.includes('n')) t = Math.max(8, Math.min(b - MIN_H, e.clientY));
+    setGeo({ x: l, y: t, w: r - l, h: b - t });
+  }, []);
+  const onResizePointerUp = useCallback(() => {
+    if (resizeRef.current) {
+      resizeRef.current = null;
+      setGeo((g) => {
+        persist(g);
+        return g;
+      });
+    }
+  }, [persist]);
+
   if (!isOpen) return null;
 
   return (
     <div
       style={{
         position: 'fixed',
-        right: 24,
-        bottom: 88,
-        width: 380,
-        height: 560,
-        maxHeight: 'calc(100vh - 110px)',
+        left: geo.x,
+        top: geo.y,
+        width: geo.w,
+        height: geo.h,
         zIndex: 9999,
         display: 'flex',
         flexDirection: 'column',
@@ -148,10 +248,24 @@ export default function ChatPanel() {
         boxShadow: '0 16px 48px rgba(0,0,0,0.28)',
       }}
     >
-      {/* Header */}
+      {/* Resize handles: 4 edges + 4 corners */}
+      <ResizeHandles
+        onDown={onResizePointerDown}
+        onMove={onResizePointerMove}
+        onUp={onResizePointerUp}
+      />
+
+      {/* Header (drag handle) */}
       <div
+        onPointerDown={onHeaderPointerDown}
+        onPointerMove={onHeaderPointerMove}
+        onPointerUp={onHeaderPointerUp}
         className="flex items-center gap-2 px-3 py-2.5 shrink-0"
-        style={{ borderBottom: '1px solid var(--border-primary)' }}
+        style={{
+          borderBottom: '1px solid var(--border-primary)',
+          cursor: 'move',
+          touchAction: 'none',
+        }}
       >
         <span style={{ fontSize: 16 }}>🐟</span>
         <span style={{ fontWeight: 600, fontSize: 13, color: 'var(--text-primary)', flex: 1 }}>
@@ -313,6 +427,47 @@ export default function ChatPanel() {
         </div>
       </div>
     </div>
+  );
+}
+
+function ResizeHandles({
+  onDown,
+  onMove,
+  onUp,
+}: {
+  onDown: (dir: string) => (e: React.PointerEvent) => void;
+  onMove: (e: React.PointerEvent) => void;
+  onUp: () => void;
+}) {
+  const T = 8; // edge thickness / corner size
+  const handles: { dir: string; style: React.CSSProperties; cursor: string }[] = [
+    { dir: 'n', style: { top: 0, left: T, right: T, height: T }, cursor: 'ns-resize' },
+    { dir: 's', style: { bottom: 0, left: T, right: T, height: T }, cursor: 'ns-resize' },
+    { dir: 'w', style: { left: 0, top: T, bottom: T, width: T }, cursor: 'ew-resize' },
+    { dir: 'e', style: { right: 0, top: T, bottom: T, width: T }, cursor: 'ew-resize' },
+    { dir: 'nw', style: { top: 0, left: 0, width: T, height: T }, cursor: 'nwse-resize' },
+    { dir: 'se', style: { bottom: 0, right: 0, width: T, height: T }, cursor: 'nwse-resize' },
+    { dir: 'ne', style: { top: 0, right: 0, width: T, height: T }, cursor: 'nesw-resize' },
+    { dir: 'sw', style: { bottom: 0, left: 0, width: T, height: T }, cursor: 'nesw-resize' },
+  ];
+  return (
+    <>
+      {handles.map((h) => (
+        <div
+          key={h.dir}
+          onPointerDown={onDown(h.dir)}
+          onPointerMove={onMove}
+          onPointerUp={onUp}
+          style={{
+            position: 'absolute',
+            zIndex: 3,
+            touchAction: 'none',
+            cursor: h.cursor,
+            ...h.style,
+          }}
+        />
+      ))}
+    </>
   );
 }
 

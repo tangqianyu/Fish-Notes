@@ -83,6 +83,9 @@ export function initDatabase() {
   if (!tagColumns.some((c) => c.name === 'is_pinned')) {
     sqlite.exec('ALTER TABLE tags ADD COLUMN is_pinned INTEGER NOT NULL DEFAULT 0');
   }
+  if (!tagColumns.some((c) => c.name === 'sort_order')) {
+    sqlite.exec('ALTER TABLE tags ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0');
+  }
 
   const noteColumns = sqlite.pragma('table_info(notes)') as { name: string }[];
   if (!noteColumns.some((c) => c.name === 'is_pinned')) {

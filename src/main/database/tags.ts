@@ -9,6 +9,7 @@ export interface TagData {
   parentId: string | null;
   noteCount: number;
   isPinned: boolean;
+  sortOrder: number;
 }
 
 export function getOrCreateTag(name: string, parentId: string | null = null): string {
@@ -33,10 +34,25 @@ export function getAllTags(): TagData[] {
       parentId: tags.parentId,
       noteCount: sql<number>`(SELECT COUNT(*) FROM note_tags WHERE note_tags.tag_id = ${tags.id} AND note_tags.note_id IN (SELECT id FROM notes WHERE is_trashed = 0))`,
       isPinned: tags.isPinned,
+      sortOrder: tags.sortOrder,
     })
     .from(tags)
     .all();
   return result as TagData[];
+}
+
+/**
+ * Reorder a sibling group: assign sort_order = index for each id in `orderedIds`.
+ * Order is compared per-level when building the tree, so values may repeat across
+ * different parent groups without conflict.
+ */
+export function reorderTags(orderedIds: string[]): void {
+  const db = getDatabase();
+  db.transaction((tx) => {
+    orderedIds.forEach((id, index) => {
+      tx.update(tags).set({ sortOrder: index }).where(eq(tags.id, id)).run();
+    });
+  });
 }
 
 export function setNoteTags(noteId: string, tagNames: string[]): void {

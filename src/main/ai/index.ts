@@ -88,7 +88,9 @@ function runClaude(
     }
 
     const bin = cfg.claudePath || 'claude';
-    const args = ['-p', '--output-format', 'text'];
+    // `--tools ''` disables ALL built-in tools (bash/file/etc.) — the assistant is
+    // a pure chat model, never an agent that touches the filesystem or DB.
+    const args = ['-p', '--output-format', 'text', '--tools', ''];
     const model = opts.model ?? cfg.model;
     if (model) args.push('--model', model);
     if (opts.systemPrompt) args.push('--append-system-prompt', opts.systemPrompt);
@@ -263,6 +265,9 @@ export function chatStream(
     'stream-json',
     '--include-partial-messages',
     '--verbose',
+    // disable ALL built-in tools — pure chat model, never an agent (no bash/file/sqlite3)
+    '--tools',
+    '',
     '--append-system-prompt',
     systemPrompt,
   ];

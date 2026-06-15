@@ -177,6 +177,7 @@ export function registerIpcHandlers() {
     tagsDb.renameTag(tagId, newName),
   );
   ipcMain.handle('tags:togglePin', (_event, tagId: string) => tagsDb.togglePinTag(tagId));
+  ipcMain.handle('tags:reorder', (_event, orderedIds: string[]) => tagsDb.reorderTags(orderedIds));
 
   // Search
   ipcMain.handle('search:notes', (_event, query: string) => searchDb.searchNotes(query));

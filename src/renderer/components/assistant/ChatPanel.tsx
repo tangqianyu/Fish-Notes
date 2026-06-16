@@ -145,6 +145,14 @@ export default function ChatPanel() {
     if (listRef.current) listRef.current.scrollTop = listRef.current.scrollHeight;
   }, [messages]);
 
+  // auto-grow the composer height to fit its content (capped, then scrolls)
+  useEffect(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
+  }, [input]);
+
   const submit = useCallback(() => {
     const text = input;
     if (!text.trim() || isStreaming) return;
@@ -169,7 +177,13 @@ export default function ChatPanel() {
   useEffect(() => {
     const onResize = () => setGeo((g) => clampGeo(g));
     window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
+    // re-clamp once after mount in case the window size wasn't settled at init
+    onResize();
+    const raf = requestAnimationFrame(onResize);
+    return () => {
+      window.removeEventListener('resize', onResize);
+      cancelAnimationFrame(raf);
+    };
   }, []);
 
   const persist = useCallback((g: Geo) => {
@@ -232,21 +246,26 @@ export default function ChatPanel() {
 
   return (
     <div
-      style={{
-        position: 'fixed',
-        left: geo.x,
-        top: geo.y,
-        width: geo.w,
-        height: geo.h,
-        zIndex: 9999,
-        display: 'flex',
-        flexDirection: 'column',
-        borderRadius: 14,
-        overflow: 'hidden',
-        backgroundColor: 'var(--card-bg)',
-        border: '1px solid var(--border-primary)',
-        boxShadow: '0 16px 48px rgba(0,0,0,0.28)',
-      }}
+      style={
+        {
+          position: 'fixed',
+          left: geo.x,
+          top: geo.y,
+          width: geo.w,
+          height: geo.h,
+          zIndex: 9999,
+          display: 'flex',
+          flexDirection: 'column',
+          borderRadius: 14,
+          overflow: 'hidden',
+          backgroundColor: 'var(--card-bg)',
+          border: '1px solid var(--border-primary)',
+          boxShadow: '0 16px 48px rgba(0,0,0,0.28)',
+          // opt out of the macOS title-bar drag region so buttons stay clickable
+          // even when the panel is dragged over the top bar
+          WebkitAppRegion: 'no-drag',
+        } as React.CSSProperties
+      }
     >
       {/* Resize handles: 4 edges + 4 corners */}
       <ResizeHandles
@@ -404,7 +423,7 @@ export default function ChatPanel() {
             rows={1}
             placeholder={boundNote ? t('Ask about this note…') : t('Ask anything…')}
             className="flex-1 resize-none outline-none bg-transparent text-sm"
-            style={{ color: 'var(--text-primary)', maxHeight: 120 }}
+            style={{ color: 'var(--text-primary)', maxHeight: 120, overflowY: 'auto' }}
           />
           {isStreaming ? (
             <button

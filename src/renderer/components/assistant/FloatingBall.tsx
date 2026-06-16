@@ -12,12 +12,12 @@ interface Pos {
 function loadPos(): Pos {
   try {
     const raw = localStorage.getItem(POS_KEY);
-    if (raw) return JSON.parse(raw);
+    if (raw) return clamp(JSON.parse(raw)); // clamp saved value into the current viewport
   } catch {
     /* ignore */
   }
   // default: bottom-right
-  return { x: window.innerWidth - SIZE - 24, y: window.innerHeight - SIZE - 24 };
+  return clamp({ x: window.innerWidth - SIZE - 24, y: window.innerHeight - SIZE - 24 });
 }
 
 function clamp(p: Pos): Pos {
@@ -38,7 +38,14 @@ export default function FloatingBall() {
   useEffect(() => {
     const onResize = () => setPos((p) => clamp(p));
     window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
+    // Re-clamp once after mount: on first launch the window size may not be
+    // settled when the initial position is computed, leaving the ball off-screen.
+    onResize();
+    const raf = requestAnimationFrame(onResize);
+    return () => {
+      window.removeEventListener('resize', onResize);
+      cancelAnimationFrame(raf);
+    };
   }, []);
 
   const onPointerDown = useCallback(
@@ -82,26 +89,30 @@ export default function FloatingBall() {
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       title="Fish"
-      style={{
-        position: 'fixed',
-        left: pos.x,
-        top: pos.y,
-        width: SIZE,
-        height: SIZE,
-        borderRadius: '50%',
-        zIndex: 9998,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontSize: 26,
-        cursor: 'grab',
-        touchAction: 'none',
-        userSelect: 'none',
-        background: 'linear-gradient(135deg, var(--bg-active), var(--card-bg))',
-        border: '1px solid var(--border-primary)',
-        boxShadow: isOpen ? '0 4px 14px rgba(0,0,0,0.25)' : '0 6px 18px rgba(0,0,0,0.22)',
-        transition: 'box-shadow 0.2s, transform 0.1s',
-      }}
+      style={
+        {
+          position: 'fixed',
+          left: pos.x,
+          top: pos.y,
+          width: SIZE,
+          height: SIZE,
+          borderRadius: '50%',
+          zIndex: 9998,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: 26,
+          cursor: 'grab',
+          touchAction: 'none',
+          userSelect: 'none',
+          background: 'linear-gradient(135deg, var(--bg-active), var(--card-bg))',
+          border: '1px solid var(--border-primary)',
+          boxShadow: isOpen ? '0 4px 14px rgba(0,0,0,0.25)' : '0 6px 18px rgba(0,0,0,0.22)',
+          transition: 'box-shadow 0.2s, transform 0.1s',
+          // don't let the macOS title-bar drag region swallow clicks/drag on the ball
+          WebkitAppRegion: 'no-drag',
+        } as React.CSSProperties
+      }
     >
       <span style={{ pointerEvents: 'none' }}>🐟</span>
       {isStreaming && (

@@ -18,8 +18,8 @@ interface EditorProps {
 
 function Editor({ noteId, title, content, isLocked, onContentChange }: EditorProps) {
   const { t, i18n } = useTranslation();
-  const { save } = useAutoSave(500);
-  const { save: saveTitle } = useAutoSave(500);
+  const { save, flush } = useAutoSave(500);
+  const { save: saveTitle, flush: flushTitle } = useAutoSave(500);
   const {
     updateNoteTitle,
     sessionUnlocked,
@@ -28,7 +28,7 @@ function Editor({ noteId, title, content, isLocked, onContentChange }: EditorPro
     lockNote,
     unlockNote,
   } = useApp();
-  const { theme } = useTheme();
+  const { resolvedTheme } = useTheme();
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [localTitle, setLocalTitle] = useState(title);
   const [suggestingTitle, setSuggestingTitle] = useState(false);
@@ -77,6 +77,21 @@ function Editor({ noteId, title, content, isLocked, onContentChange }: EditorPro
   useEffect(() => {
     setLocalTitle(title);
   }, [title]);
+
+  // Flush any pending debounced save when switching notes, unmounting, or closing the
+  // window — otherwise edits made within the last 500ms are silently lost.
+  useEffect(() => {
+    const onBeforeUnload = () => {
+      flush();
+      flushTitle();
+    };
+    window.addEventListener('beforeunload', onBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', onBeforeUnload);
+      flush();
+      flushTitle();
+    };
+  }, [noteId, flush, flushTitle]);
 
   const handleTitleChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -176,7 +191,7 @@ function Editor({ noteId, title, content, isLocked, onContentChange }: EditorPro
 
   return (
     <div
-      className="flex-1 flex flex-col min-w-0 transition-colors"
+      className="relative flex-1 flex flex-col min-w-0 transition-colors"
       style={{ backgroundColor: 'var(--bg-primary)' }}
     >
       {/* Editor header with export button */}
@@ -384,7 +399,7 @@ function Editor({ noteId, title, content, isLocked, onContentChange }: EditorPro
 
             {/* Row 3: Markdown editor */}
             <MarkdownEditor
-              key={`${noteId}-${theme}-${i18n.language}`}
+              key={`${noteId}-${resolvedTheme}-${i18n.language}`}
               defaultValue={editorContent}
               onChange={handleChange}
             />

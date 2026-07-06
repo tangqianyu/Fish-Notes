@@ -1,4 +1,14 @@
 import crypto from 'node:crypto';
+import { promisify } from 'node:util';
+
+// Async scrypt keeps the main process responsive: the sync variant blocks the event
+// loop for ~50-100ms per call (and password ops do several), freezing the whole UI.
+const scryptAsync = promisify(crypto.scrypt) as (
+  password: crypto.BinaryLike,
+  salt: crypto.BinaryLike,
+  keylen: number,
+  options: crypto.ScryptOptions,
+) => Promise<Buffer>;
 
 // scrypt parameters
 const SCRYPT_N = 16384;
@@ -29,9 +39,9 @@ export function isKeyReady(): boolean {
 }
 
 /** Hash a password with a random salt using scrypt */
-export function hashPassword(password: string): { hash: string; salt: string } {
+export async function hashPassword(password: string): Promise<{ hash: string; salt: string }> {
   const salt = crypto.randomBytes(SALT_LEN);
-  const derived = crypto.scryptSync(password, salt, KEY_LEN, {
+  const derived = await scryptAsync(password, salt, KEY_LEN, {
     N: SCRYPT_N,
     r: SCRYPT_R,
     p: SCRYPT_P,
@@ -43,9 +53,13 @@ export function hashPassword(password: string): { hash: string; salt: string } {
 }
 
 /** Verify a password against a stored hash and salt */
-export function verifyPassword(password: string, hash: string, salt: string): boolean {
+export async function verifyPassword(
+  password: string,
+  hash: string,
+  salt: string,
+): Promise<boolean> {
   const saltBuf = Buffer.from(salt, 'base64');
-  const derived = crypto.scryptSync(password, saltBuf, KEY_LEN, {
+  const derived = await scryptAsync(password, saltBuf, KEY_LEN, {
     N: SCRYPT_N,
     r: SCRYPT_R,
     p: SCRYPT_P,
@@ -56,9 +70,9 @@ export function verifyPassword(password: string, hash: string, salt: string): bo
 }
 
 /** Derive a 32-byte AES encryption key from a password and salt */
-export function deriveEncryptionKey(password: string, keySalt: string): Buffer {
+export async function deriveEncryptionKey(password: string, keySalt: string): Promise<Buffer> {
   const saltBuf = Buffer.from(keySalt, 'base64');
-  return crypto.scryptSync(password, saltBuf, KEY_LEN, {
+  return scryptAsync(password, saltBuf, KEY_LEN, {
     N: SCRYPT_N,
     r: SCRYPT_R,
     p: SCRYPT_P,

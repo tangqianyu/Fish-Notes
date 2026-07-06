@@ -13,7 +13,6 @@ import {
   insertImage,
   insertDivider,
   insertTable,
-  formatTable,
   toggleBlockquote,
   toggleBulletList,
   toggleOrderedList,
@@ -200,20 +199,6 @@ const LIST_BUTTONS: ToolButton[] = [
   },
 ];
 
-const FORMAT_TABLE_BUTTON: ToolButton = {
-  key: 'format-table',
-  labelKey: 'Format table',
-  icon: icon(
-    <>
-      <line x1="4" y1="6" x2="20" y2="6" />
-      <line x1="4" y1="12" x2="20" y2="12" />
-      <line x1="4" y1="18" x2="20" y2="18" />
-      <path d="M21 4l-2 2M19 6l2 2" />
-    </>,
-  ),
-  command: formatTable,
-};
-
 const MEDIA_BUTTONS: ToolButton[] = [
   {
     key: 'image',
@@ -264,7 +249,7 @@ function HeadingMenu({ getView }: { getView: () => EditorView | null }) {
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
-          className="px-2 py-1 rounded text-sm font-bold transition-colors hover:opacity-70"
+          className="fn-tool-btn px-2 py-1 rounded text-sm font-bold"
           style={{ color: 'var(--text-secondary)' }}
         >
           H
@@ -320,7 +305,7 @@ function TableMenu({ getView }: { getView: () => EditorView | null }) {
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
-          className="p-1.5 rounded transition-colors hover:opacity-70"
+          className="fn-tool-btn p-1.5 rounded"
           style={{ color: 'var(--text-secondary)' }}
         >
           <svg
@@ -370,7 +355,7 @@ function ToolbarButton({
           const view = getView();
           if (view) button.command(view);
         }}
-        className="p-1.5 rounded transition-colors hover:opacity-70"
+        className="fn-tool-btn p-1.5 rounded"
         style={{ color: 'var(--text-secondary)' }}
       >
         {button.icon}
@@ -410,7 +395,6 @@ export default function EditorToolbar({ getView }: EditorToolbarProps) {
       ))}
       <Divider />
       <TableMenu getView={getView} />
-      <ToolbarButton button={FORMAT_TABLE_BUTTON} getView={getView} />
     </div>
   );
 }

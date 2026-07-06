@@ -25,6 +25,13 @@ export interface AIConfig {
   claudePath?: string;
 }
 
+/** 暴露给 renderer 的安全视图 —— 绝不包含明文 token */
+export interface PublicAIConfig {
+  model: string;
+  claudePath?: string;
+  hasToken: boolean;
+}
+
 const DEFAULT_CONFIG: AIConfig = {
   token: '',
   model: 'claude-sonnet-4-6',
@@ -32,6 +39,7 @@ const DEFAULT_CONFIG: AIConfig = {
 
 const SETTINGS_KEY = 'ai_config';
 
+/** 完整配置（含 token），仅供主进程内部调用 claude CLI 使用，永不返回给 renderer。 */
 export function getAIConfig(): AIConfig {
   const row = getRawDatabase()
     .prepare('SELECT value FROM app_settings WHERE key = ?')
@@ -44,10 +52,23 @@ export function getAIConfig(): AIConfig {
   }
 }
 
+/** 给 renderer 的脱敏配置：只暴露是否已配置 token，不回传 token 本身。 */
+export function getAIConfigPublic(): PublicAIConfig {
+  const cfg = getAIConfig();
+  return { model: cfg.model, claudePath: cfg.claudePath, hasToken: !!cfg.token };
+}
+
 export function setAIConfig(cfg: AIConfig): void {
+  // 空 token 表示"不修改"（renderer 的 token 输入框只写不回显），保留已存的 token。
+  const existing = getAIConfig();
+  const merged: AIConfig = {
+    token: cfg.token?.trim() ? cfg.token : existing.token,
+    model: cfg.model || existing.model,
+    claudePath: cfg.claudePath,
+  };
   getRawDatabase()
     .prepare('INSERT OR REPLACE INTO app_settings (key, value) VALUES (?, ?)')
-    .run(SETTINGS_KEY, JSON.stringify(cfg));
+    .run(SETTINGS_KEY, JSON.stringify(merged));
 }
 
 /**
@@ -142,7 +163,12 @@ export async function testClaudeConnection(
   override?: AIConfig,
 ): Promise<{ ok: true; reply: string } | { ok: false; error: string }> {
   try {
-    const configOverride = override ? { ...DEFAULT_CONFIG, ...override } : undefined;
+    // 若 renderer 传来的 override 没带 token（"不修改"占位），回填已存 token 用于测试。
+    let configOverride: AIConfig | undefined;
+    if (override) {
+      const token = override.token?.trim() ? override.token : getAIConfig().token;
+      configOverride = { ...DEFAULT_CONFIG, ...override, token };
+    }
     const reply = await runClaude('只回复 "PONG" 两个字母，不要其他内容。', { configOverride });
     return { ok: true, reply };
   } catch (e) {
@@ -228,18 +254,28 @@ const activeChats = new Map<string, ChildProcess>();
 
 export interface ChatStreamCallbacks {
   onDelta: (text: string) => void;
+  /** extended-thinking 增量。部分模型（如 Opus 4.8）思考内容被加密，此时 text 为空、
+   * 只有 estimatedTokens 计数 —— UI 据此显示"思考中 · ~N tokens"。 */
+  onThinking?: (text: string, estimatedTokens?: number) => void;
   onDone: (fullText: string) => void;
   onError: (message: string) => void;
 }
 
+export interface ChatContext {
+  /** 绑定单篇笔记时的笔记内容 */
+  noteContext?: string;
+  /** "问笔记库"模式：retrieval.buildKbContext 拼好的完整上下文 */
+  kbPrompt?: string;
+}
+
 /**
  * 流式对话。messages 为完整对话历史（最后一条是本轮用户问题）。
- * noteContext 存在时作为附加系统提示注入（问当前笔记场景）。
+ * ctx.noteContext 存在时注入单篇笔记上下文；ctx.kbNotes 存在时注入笔记库检索结果。
  */
 export function chatStream(
   requestId: string,
   messages: ChatMessage[],
-  noteContext: string | undefined,
+  ctx: ChatContext,
   cb: ChatStreamCallbacks,
 ): void {
   const cfg = getAIConfig();
@@ -253,9 +289,11 @@ export function chatStream(
   }
 
   let systemPrompt = ASSISTANT_BASE_PROMPT;
-  if (noteContext && noteContext.trim()) {
-    const plain = stripMarkdownForFts(noteContext).slice(0, NOTE_CONTENT_CAP);
+  if (ctx.noteContext && ctx.noteContext.trim()) {
+    const plain = stripMarkdownForFts(ctx.noteContext).slice(0, NOTE_CONTENT_CAP);
     systemPrompt += `\n\n用户正在阅读下面这篇笔记，请优先基于它来回答；笔记之外的内容如实说明。\n\n<笔记内容>\n${plain}\n</笔记内容>`;
+  } else if (ctx.kbPrompt) {
+    systemPrompt += `\n\n${ctx.kbPrompt}`;
   }
 
   const bin = cfg.claudePath || 'claude';
@@ -277,6 +315,9 @@ export function chatStream(
     ...process.env,
     PATH: getShellPath(),
     CLAUDE_CODE_OAUTH_TOKEN: cfg.token,
+    // 给 extended thinking 一个预算：模型自适应决定是否思考（简单问题不思考）。
+    // 没有这个变量时 headless 模式完全不产生 thinking 事件。
+    MAX_THINKING_TOKENS: '8000',
   };
 
   let proc: ChildProcess;
@@ -303,11 +344,20 @@ export function chatStream(
       return; // 非 JSON 行（极少）直接忽略
     }
     if (evt.type === 'stream_event') {
-      const inner = evt.event as { type?: string; delta?: { type?: string; text?: string } };
-      if (inner?.type === 'content_block_delta' && inner.delta?.type === 'text_delta') {
-        const t = inner.delta.text ?? '';
-        streamed += t;
-        cb.onDelta(t);
+      const inner = evt.event as {
+        type?: string;
+        delta?: { type?: string; text?: string; thinking?: string; estimated_tokens?: number };
+      };
+      if (inner?.type === 'content_block_delta') {
+        if (inner.delta?.type === 'text_delta') {
+          const t = inner.delta.text ?? '';
+          streamed += t;
+          cb.onDelta(t);
+        } else if (inner.delta?.type === 'thinking_delta') {
+          const t = inner.delta.thinking ?? '';
+          const est = inner.delta.estimated_tokens;
+          if (t || est) cb.onThinking?.(t, est);
+        }
       }
     } else if (evt.type === 'result' && typeof evt.result === 'string') {
       resultText = evt.result;

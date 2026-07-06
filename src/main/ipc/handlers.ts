@@ -14,7 +14,7 @@ import {
   isKeyReady,
 } from '../encryption';
 import {
-  getAIConfig,
+  getAIConfigPublic,
   setAIConfig,
   testClaudeConnection,
   suggestTitle,
@@ -24,6 +24,7 @@ import {
   type AIConfig,
   type ChatMessage,
 } from '../ai';
+import { buildKbContext } from '../ai/retrieval';
 import * as chatsDb from '../database/chats';
 
 function getSetting(key: string): string | undefined {
@@ -76,23 +77,23 @@ export function registerIpcHandlers() {
     return isKeyReady();
   });
 
-  ipcMain.handle('encryption:verifyPassword', (_event, password: string) => {
+  ipcMain.handle('encryption:verifyPassword', async (_event, password: string) => {
     const hash = getSetting('encryption_password_hash');
     const salt = getSetting('encryption_password_salt');
     const keySalt = getSetting('encryption_key_salt');
     if (!hash || !salt || !keySalt) return false;
 
-    if (!verifyPw(password, hash, salt)) return false;
+    if (!(await verifyPw(password, hash, salt))) return false;
 
     // Cache the encryption key for this session
-    const key = deriveEncryptionKey(password, keySalt);
+    const key = await deriveEncryptionKey(password, keySalt);
     setCachedKey(key);
     return true;
   });
 
-  ipcMain.handle('encryption:setPassword', (_event, password: string) => {
+  ipcMain.handle('encryption:setPassword', async (_event, password: string) => {
     // First-time password setup
-    const { hash, salt } = hashPassword(password);
+    const { hash, salt } = await hashPassword(password);
     const keySaltBuf = randomBytes(32);
     const keySalt = keySaltBuf.toString('base64');
 
@@ -101,28 +102,28 @@ export function registerIpcHandlers() {
     setSetting('encryption_key_salt', keySalt);
 
     // Cache the key
-    const key = deriveEncryptionKey(password, keySalt);
+    const key = await deriveEncryptionKey(password, keySalt);
     setCachedKey(key);
     return true;
   });
 
   ipcMain.handle(
     'encryption:changePassword',
-    (_event, oldPassword: string, newPassword: string) => {
+    async (_event, oldPassword: string, newPassword: string) => {
       const hash = getSetting('encryption_password_hash');
       const salt = getSetting('encryption_password_salt');
       const keySalt = getSetting('encryption_key_salt');
       if (!hash || !salt || !keySalt) return false;
 
-      if (!verifyPw(oldPassword, hash, salt)) return false;
+      if (!(await verifyPw(oldPassword, hash, salt))) return false;
 
-      const oldKey = deriveEncryptionKey(oldPassword, keySalt);
+      const oldKey = await deriveEncryptionKey(oldPassword, keySalt);
 
       // Generate new credentials
-      const newHash = hashPassword(newPassword);
+      const newHash = await hashPassword(newPassword);
       const newKeySaltBuf = randomBytes(32);
       const newKeySalt = newKeySaltBuf.toString('base64');
-      const newKey = deriveEncryptionKey(newPassword, newKeySalt);
+      const newKey = await deriveEncryptionKey(newPassword, newKeySalt);
 
       // Re-encrypt all locked notes in a transaction
       notesDb.reEncryptAllNotes(oldKey, newKey);
@@ -137,15 +138,15 @@ export function registerIpcHandlers() {
     },
   );
 
-  ipcMain.handle('encryption:removePassword', (_event, password: string) => {
+  ipcMain.handle('encryption:removePassword', async (_event, password: string) => {
     const hash = getSetting('encryption_password_hash');
     const salt = getSetting('encryption_password_salt');
     const keySalt = getSetting('encryption_key_salt');
     if (!hash || !salt || !keySalt) return false;
 
-    if (!verifyPw(password, hash, salt)) return false;
+    if (!(await verifyPw(password, hash, salt))) return false;
 
-    const key = deriveEncryptionKey(password, keySalt);
+    const key = await deriveEncryptionKey(password, keySalt);
 
     // Decrypt all locked notes
     notesDb.decryptAllNotes(key);
@@ -182,17 +183,16 @@ export function registerIpcHandlers() {
   // Search
   ipcMain.handle('search:notes', (_event, query: string) => searchDb.searchNotes(query));
 
-  // Images
-  ipcMain.handle('images:saveFromPath', (_event, filePath: string) =>
-    images.saveImageFromPath(filePath),
-  );
+  // Images. NOTE: there is deliberately no "save from arbitrary path" IPC — letting the
+  // renderer hand the main process any absolute path to copy is a file-exfiltration vector.
+  // Images enter only via saveFromBuffer (drag/paste) or the main-driven file picker.
   ipcMain.handle('images:saveFromBuffer', (_event, buffer: ArrayBuffer, mimeType: string) =>
     images.saveImageFromBuffer(Buffer.from(buffer), mimeType),
   );
   ipcMain.handle('images:pickFile', () => images.pickImageFile());
 
   // AI
-  ipcMain.handle('ai:getConfig', () => getAIConfig());
+  ipcMain.handle('ai:getConfig', () => getAIConfigPublic());
   ipcMain.handle('ai:setConfig', (_event, cfg: AIConfig) => setAIConfig(cfg));
   ipcMain.handle('ai:testConnection', (_event, cfg?: AIConfig) => testClaudeConnection(cfg));
   ipcMain.handle('ai:suggestTitle', (_event, content: string) => suggestTitle(content));
@@ -203,13 +203,30 @@ export function registerIpcHandlers() {
     'ai:chatStream',
     (
       event,
-      payload: { requestId: string; messages: ChatMessage[]; noteContext?: string },
+      payload: {
+        requestId: string;
+        messages: ChatMessage[];
+        noteContext?: string;
+        scope?: 'notes';
+      },
     ) => {
       const sender = event.sender;
-      const { requestId, messages, noteContext } = payload;
-      chatStream(requestId, messages, noteContext, {
+      const { requestId, messages, noteContext, scope } = payload;
+      let kbPrompt: string | undefined;
+      if (scope === 'notes') {
+        const question = messages[messages.length - 1]?.content ?? '';
+        const kb = buildKbContext(question);
+        kbPrompt = kb.prompt;
+        if (!sender.isDestroyed())
+          sender.send('ai:chat-sources', { requestId, sources: kb.sources });
+      }
+      chatStream(requestId, messages, { noteContext, kbPrompt }, {
         onDelta: (text) => {
           if (!sender.isDestroyed()) sender.send('ai:chat-chunk', { requestId, delta: text });
+        },
+        onThinking: (text, estimatedTokens) => {
+          if (!sender.isDestroyed())
+            sender.send('ai:chat-thinking', { requestId, delta: text, tokens: estimatedTokens });
         },
         onDone: (fullText) => {
           if (!sender.isDestroyed()) sender.send('ai:chat-done', { requestId, fullText });

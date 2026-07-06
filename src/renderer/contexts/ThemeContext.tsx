@@ -1,9 +1,45 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 
-type ThemeName = 'light' | 'dark' | 'solarized' | 'anime';
+type ThemeName =
+  | 'light'
+  | 'dark'
+  | 'solarized'
+  | 'anime'
+  | 'anime-night'
+  | 'cinnamoroll'
+  | 'cinnamoroll-night'
+  | 'kuromi'
+  | 'kuromi-night'
+  | 'melody'
+  | 'melody-night'
+  | 'totoro'
+  | 'totoro-night'
+  | 'ink'
+  | 'ink-night';
+/** kept as an alias — day/night variants are now picked explicitly in Settings */
+export type ResolvedTheme = ThemeName;
+
+const THEME_NAMES: ThemeName[] = [
+  'light',
+  'dark',
+  'solarized',
+  'anime',
+  'anime-night',
+  'cinnamoroll',
+  'cinnamoroll-night',
+  'kuromi',
+  'kuromi-night',
+  'melody',
+  'melody-night',
+  'totoro',
+  'totoro-night',
+  'ink',
+  'ink-night',
+];
 
 interface ThemeContextValue {
   theme: ThemeName;
+  resolvedTheme: ResolvedTheme;
   setTheme: (theme: ThemeName) => void;
 }
 
@@ -14,12 +50,16 @@ const STORAGE_KEY = 'fish-notes-theme';
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<ThemeName>(() => {
     const saved = localStorage.getItem(STORAGE_KEY) as ThemeName | null;
-    if (saved && ['light', 'dark', 'solarized', 'anime'].includes(saved)) return saved;
+    if (saved && THEME_NAMES.includes(saved)) return saved;
     return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   });
+  const resolvedTheme: ResolvedTheme = theme;
 
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
+    document.documentElement.setAttribute('data-theme', resolvedTheme);
+  }, [resolvedTheme]);
+
+  useEffect(() => {
     localStorage.setItem(STORAGE_KEY, theme);
   }, [theme]);
 
@@ -39,7 +79,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setThemeState(t);
   }, []);
 
-  return <ThemeContext.Provider value={{ theme, setTheme }}>{children}</ThemeContext.Provider>;
+  return (
+    <ThemeContext.Provider value={{ theme, resolvedTheme, setTheme }}>
+      {children}
+    </ThemeContext.Provider>
+  );
 }
 
 export function useTheme() {

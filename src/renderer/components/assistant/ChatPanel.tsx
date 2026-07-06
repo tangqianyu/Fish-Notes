@@ -1,8 +1,20 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAssistant, type UiMessage } from '../../contexts/AssistantContext';
+import { useApp } from '../../contexts/AppContext';
 import { message } from '../message';
 import MarkdownPreview from '../editor/MarkdownPreview';
+import {
+  RobotIcon,
+  NotesIcon,
+  FileIcon,
+  ClockIcon,
+  TrashIcon,
+  SendIcon,
+  PlusIcon,
+  CloseIcon,
+  BookIcon,
+} from '../icons';
 
 const GEO_KEY = 'fish-notes:assistant-panel';
 const MIN_W = 300;
@@ -36,12 +48,85 @@ function loadGeo(): Geo {
   return clampGeo({ x: window.innerWidth - w - 24, y: window.innerHeight - h - 88, w, h });
 }
 
+function ThinkingBlock({ msg }: { msg: UiMessage }) {
+  const { t } = useTranslation();
+  // live while the model is still thinking (no answer text yet); collapsible afterwards
+  const live = !!msg.streaming && !msg.content;
+  const [expanded, setExpanded] = useState(false);
+  const bodyRef = useRef<HTMLDivElement>(null);
+
+  // keep the live view pinned to the latest thought
+  useEffect(() => {
+    if (live && bodyRef.current) bodyRef.current.scrollTop = bodyRef.current.scrollHeight;
+  }, [live, msg.thinking]);
+
+  const tokens = msg.thinkingTokens ?? 0;
+  const hasText = !!msg.thinking?.trim();
+  if (!hasText && !tokens) return null;
+
+  // some models (e.g. Opus 4.8 via CLI) redact thinking text and only report token
+  // counts — show a live "thinking" indicator instead of an expandable transcript
+  if (!hasText) {
+    return (
+      <div
+        className={live ? 'fn-pulse' : undefined}
+        style={{ fontSize: 11, color: 'var(--text-tertiary)', marginBottom: 6 }}
+      >
+        {live ? t('Thinking…') : t('Thought for a while')} · ~{tokens} tokens
+      </div>
+    );
+  }
+
+  const open = live || expanded;
+  return (
+    <div style={{ maxWidth: '85%', marginBottom: 6 }}>
+      <button
+        onClick={() => !live && setExpanded((v) => !v)}
+        className="flex items-center gap-1"
+        style={{ fontSize: 11, color: 'var(--text-tertiary)', cursor: live ? 'default' : 'pointer' }}
+      >
+        <span
+          style={{
+            display: 'inline-block',
+            transform: open ? 'rotate(90deg)' : 'none',
+            transition: 'transform 0.15s',
+          }}
+        >
+          ▸
+        </span>
+        {live ? t('Thinking…') : t('Thought process')}
+      </button>
+      {open && (
+        <div
+          ref={bodyRef}
+          style={{
+            marginTop: 4,
+            padding: '6px 10px',
+            borderLeft: '2px solid var(--border-primary)',
+            fontSize: 12,
+            lineHeight: 1.5,
+            color: 'var(--text-tertiary)',
+            whiteSpace: 'pre-wrap',
+            wordBreak: 'break-word',
+            maxHeight: live ? 96 : 240,
+            overflowY: 'auto',
+          }}
+        >
+          {msg.thinking}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function MessageBubble({
   msg,
   onSaveNote,
+  onOpenNote,
 }: {
   msg: UiMessage;
   onSaveNote?: (text: string) => void;
+  onOpenNote?: (noteId: string) => void;
 }) {
   const { t } = useTranslation();
   const isUser = msg.role === 'user';
@@ -50,6 +135,7 @@ function MessageBubble({
       className="group flex flex-col"
       style={{ alignItems: isUser ? 'flex-end' : 'flex-start', marginBottom: 12 }}
     >
+      {!isUser && <ThinkingBlock msg={msg} />}
       <div
         style={{
           maxWidth: '85%',
@@ -64,10 +150,42 @@ function MessageBubble({
       >
         {isUser ? (
           <span style={{ whiteSpace: 'pre-wrap' }}>{msg.content}</span>
-        ) : (
-          <MarkdownPreview value={msg.content || (msg.streaming ? '…' : '')} />
-        )}
+        ) : msg.content ? (
+          <MarkdownPreview value={msg.content} />
+        ) : msg.streaming ? (
+          <span className="fn-typing" style={{ color: 'var(--text-tertiary)' }}>
+            <span />
+            <span />
+            <span />
+          </span>
+        ) : null}
       </div>
+      {!isUser && !!msg.sources?.length && (
+        <div className="flex flex-wrap items-center gap-1.5" style={{ marginTop: 6, maxWidth: '85%' }}>
+          <span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>{t('Sources')}</span>
+          {msg.sources.map((src) => (
+            <button
+              key={src.id}
+              onClick={() => onOpenNote?.(src.id)}
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full hover:opacity-80"
+              style={{
+                fontSize: 11,
+                background: 'var(--tag-bg)',
+                color: 'var(--tag-text)',
+                maxWidth: 180,
+              }}
+              title={src.title}
+            >
+              <FileIcon size={10} />
+              <span
+                style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+              >
+                {src.title}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
       {!isUser && !msg.streaming && msg.content.trim() && (
         <div
           className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity"
@@ -84,7 +202,7 @@ function MessageBubble({
           </button>
           {onSaveNote && (
             <button onClick={() => onSaveNote(msg.content)} style={{ color: 'var(--text-tertiary)' }}>
-              📝 {t('Save as note')}
+              <NotesIcon size={12} style={{ display: 'inline', verticalAlign: '-1px' }} /> {t('Save as note')}
             </button>
           )}
         </div>
@@ -110,14 +228,24 @@ export default function ChatPanel() {
     deleteChat,
     send,
     abort,
+    toggleKb,
     saveAsNote,
     prefill,
     clearPrefill,
   } = useAssistant();
+  const { state: appState, selectNote, setViewMode } = useApp();
 
-  const messages = activeTab.messages;
-  const boundNote = activeTab.boundNote;
-  const isStreaming = activeTab.isStreaming;
+  const openNote = useCallback(
+    (noteId: string) => {
+      if (appState.viewMode !== 'all') setViewMode('all');
+      selectNote(noteId);
+    },
+    [appState.viewMode, setViewMode, selectNote],
+  );
+
+  const messages = activeTab?.messages ?? [];
+  const boundNote = activeTab?.boundNote ?? null;
+  const isStreaming = activeTab?.isStreaming ?? false;
 
   const [input, setInput] = useState('');
   const [showHistory, setShowHistory] = useState(false);
@@ -286,31 +414,33 @@ export default function ChatPanel() {
           touchAction: 'none',
         }}
       >
-        <span style={{ fontSize: 16 }}>🐟</span>
+        <span style={{ display: 'inline-flex', color: 'var(--accent-solid)' }}>
+          <RobotIcon size={16} />
+        </span>
         <span style={{ fontWeight: 600, fontSize: 13, color: 'var(--text-primary)', flex: 1 }}>
           {t('Fish Assistant')}
         </span>
         <HeaderBtn title={t('New chat')} onClick={newTab}>
-          ＋
+          <PlusIcon size={14} />
         </HeaderBtn>
         <HeaderBtn title={t('History')} onClick={() => setShowHistory((v) => !v)}>
-          🕑
+          <ClockIcon size={14} />
         </HeaderBtn>
         {isFree && messages.length > 0 && (
           <HeaderBtn
             title={t('Save conversation as note')}
             onClick={() => saveAsNote(formatTranscript(messages))}
           >
-            📝
+            <NotesIcon size={14} />
           </HeaderBtn>
         )}
         <HeaderBtn title={t('Close')} onClick={close}>
-          ✕
+          <CloseIcon size={14} />
         </HeaderBtn>
       </div>
 
       {/* Tab strip */}
-      {tabs.length > 1 && (
+      {tabs.length > 0 && (
         <div
           className="flex items-center gap-1 px-2 py-1.5 overflow-x-auto shrink-0"
           style={{ borderBottom: '1px solid var(--border-secondary)' }}
@@ -329,7 +459,11 @@ export default function ChatPanel() {
                   color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
                 }}
               >
-                {tb.boundNote && <span>📄</span>}
+                {tb.boundNote && (
+                  <span style={{ display: 'inline-flex' }}>
+                    <FileIcon size={12} />
+                  </span>
+                )}
                 {tb.isStreaming && <span>•</span>}
                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {tb.title || (tb.boundNote ? tb.boundNote.title : t('New chat'))}
@@ -360,7 +494,9 @@ export default function ChatPanel() {
             className="flex items-center gap-1.5 rounded-md px-2 py-1"
             style={{ backgroundColor: 'var(--bg-tertiary)', fontSize: 12, maxWidth: '100%' }}
           >
-            <span>📄</span>
+            <span style={{ display: 'inline-flex', color: 'var(--text-tertiary)' }}>
+              <FileIcon size={13} />
+            </span>
             <span
               style={{
                 color: 'var(--text-secondary)',
@@ -386,13 +522,15 @@ export default function ChatPanel() {
       {showHistory ? (
         <HistoryList
           chats={chats}
-          currentChatId={activeTab.chatId}
+          currentChatId={activeTab?.chatId ?? null}
           onSelect={(id) => {
             selectChat(id);
             setShowHistory(false);
           }}
           onDelete={deleteChat}
         />
+      ) : !activeTab ? (
+        <NoTabState onNew={newTab} />
       ) : (
         <div ref={listRef} className="flex-1 overflow-y-auto px-3 py-3">
           {messages.length === 0 ? (
@@ -403,25 +541,49 @@ export default function ChatPanel() {
                 key={m.id}
                 msg={m}
                 onSaveNote={isFree ? (text) => saveAsNote(text) : undefined}
+                onOpenNote={openNote}
               />
             ))
           )}
         </div>
       )}
 
-      {/* Composer */}
+      {/* Composer (only when a conversation is open) */}
+      {activeTab && (
       <div className="px-3 py-2.5 shrink-0" style={{ borderTop: '1px solid var(--border-primary)' }}>
         <div
           className="flex items-end gap-2 rounded-lg px-2 py-1.5"
           style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-primary)' }}
         >
+          {isFree && (
+            <button
+              onClick={toggleKb}
+              title={t('Ask my notes')}
+              className="flex items-center justify-center rounded shrink-0 transition-colors"
+              style={{
+                width: 24,
+                height: 24,
+                marginBottom: 1,
+                background: activeTab?.useKb ? 'var(--accent-soft-bg)' : 'transparent',
+                color: activeTab?.useKb ? 'var(--accent-solid)' : 'var(--text-tertiary)',
+              }}
+            >
+              <BookIcon size={15} />
+            </button>
+          )}
           <textarea
             ref={inputRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={onKeyDown}
             rows={1}
-            placeholder={boundNote ? t('Ask about this note…') : t('Ask anything…')}
+            placeholder={
+              boundNote
+                ? t('Ask about this note…')
+                : activeTab?.useKb
+                  ? t('Ask your notes…')
+                  : t('Ask anything…')
+            }
             className="flex-1 resize-none outline-none bg-transparent text-sm"
             style={{ color: 'var(--text-primary)', maxHeight: 120, overflowY: 'auto' }}
           />
@@ -440,11 +602,38 @@ export default function ChatPanel() {
               title={t('Send')}
               style={{ color: input.trim() ? 'var(--text-active)' : 'var(--text-tertiary)', fontSize: 16 }}
             >
-              ➤
+              <SendIcon size={16} />
             </button>
           )}
         </div>
       </div>
+      )}
+    </div>
+  );
+}
+
+function NoTabState({ onNew }: { onNew: () => void }) {
+  const { t } = useTranslation();
+  return (
+    <div className="flex-1 flex flex-col items-center justify-center text-center gap-3 px-4">
+      <div style={{ color: 'var(--accent-solid)', display: 'inline-flex' }}>
+        <RobotIcon size={34} strokeWidth={1.5} />
+      </div>
+      <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+        {t('No conversation yet')}
+      </div>
+      <button
+        onClick={onNew}
+        className="fn-accent-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium"
+        style={{
+          background: 'var(--accent-bg)',
+          color: 'var(--accent-fg)',
+          boxShadow: 'var(--accent-shadow)',
+        }}
+      >
+        <PlusIcon size={13} />
+        {t('New chat')}
+      </button>
     </div>
   );
 }
@@ -503,8 +692,8 @@ function HeaderBtn({
     <button
       onClick={onClick}
       title={title}
-      className="rounded hover:opacity-70 transition-opacity"
-      style={{ fontSize: 13, color: 'var(--text-secondary)', padding: '2px 4px' }}
+      className="rounded hover:opacity-70 transition-opacity flex items-center justify-center"
+      style={{ width: 22, height: 22, color: 'var(--text-secondary)' }}
     >
       {children}
     </button>
@@ -524,7 +713,9 @@ function EmptyState({ bound, onPick }: { bound: boolean; onPick: (text: string) 
   } as const;
   return (
     <div className="flex flex-col items-center justify-center h-full text-center gap-3">
-      <div style={{ fontSize: 32 }}>🐟</div>
+      <div style={{ color: 'var(--accent-solid)', display: 'inline-flex' }}>
+        <RobotIcon size={34} strokeWidth={1.5} />
+      </div>
       <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
         {bound ? t('Ask me anything about this note') : t('Hi, I am Fish — your note assistant')}
       </div>
@@ -592,10 +783,10 @@ function HistoryList({
                 e.stopPropagation();
                 onDelete(c.id);
               }}
-              className="opacity-0 group-hover:opacity-100"
-              style={{ color: 'var(--text-tertiary)', fontSize: 12 }}
+              className="opacity-0 group-hover:opacity-100 flex items-center justify-center rounded shrink-0"
+              style={{ width: 22, height: 22, color: 'var(--text-tertiary)' }}
             >
-              🗑
+              <TrashIcon size={14} />
             </button>
           </div>
         ))

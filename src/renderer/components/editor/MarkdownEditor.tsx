@@ -8,6 +8,7 @@ import EditorToolbar from './EditorToolbar';
 import PolishDialog from './PolishDialog';
 import type { AppTheme } from './extensions/themes';
 import { useAssistant } from '../../contexts/AssistantContext';
+import { RobotIcon } from '../icons';
 
 export type EditorMode = 'source' | 'preview' | 'split';
 
@@ -44,10 +45,11 @@ function TabButton({ label, shortcut, active, onClick }: TabButtonProps) {
     <button
       type="button"
       onClick={onClick}
-      className="px-3 py-1 text-xs rounded transition-colors"
+      className={`px-3 py-1 text-xs rounded-full transition-all ${active ? '' : 'fn-tool-btn'}`}
       style={{
-        color: active ? 'var(--text-active)' : 'var(--text-tertiary)',
-        backgroundColor: active ? 'var(--bg-active)' : 'transparent',
+        color: active ? 'var(--accent-fg)' : 'var(--text-tertiary)',
+        background: active ? 'var(--accent-bg)' : 'transparent',
+        boxShadow: active ? 'var(--accent-shadow)' : undefined,
         fontWeight: active ? 600 : 500,
       }}
       title={`${label} (${shortcut})`}
@@ -64,10 +66,13 @@ export default function MarkdownEditor({
   showToolbar: showToolbarProp,
 }: MarkdownEditorProps) {
   const { t } = useTranslation();
-  const { theme } = useTheme();
+  const { resolvedTheme } = useTheme();
   const { askWithSelection } = useAssistant();
   const [mode, setMode] = useState<EditorMode>(readMode);
   const [content, setContent] = useState(defaultValue);
+  // Debounced copy of `content` fed to the preview so we don't re-parse the whole
+  // document with marked on every keystroke (only matters in preview/split mode).
+  const [previewContent, setPreviewContent] = useState(defaultValue);
   const [toolbarVisible] = useState(readToolbar);
   const editorRef = useRef<CodeMirrorHandle>(null);
   const sourceScrollRef = useRef<HTMLDivElement>(null);
@@ -220,6 +225,14 @@ export default function MarkdownEditor({
     [onChange],
   );
 
+  // Sync preview content: debounce while editing; when the preview isn't shown
+  // (source mode) it's unmounted anyway, so skip the work entirely.
+  useEffect(() => {
+    if (mode === 'source') return;
+    const id = setTimeout(() => setPreviewContent(content), 120);
+    return () => clearTimeout(id);
+  }, [content, mode]);
+
   const getView = useCallback(() => editorRef.current?.view ?? null, []);
 
   const syncScroll = useCallback(
@@ -266,7 +279,7 @@ export default function MarkdownEditor({
     };
   }, [mode, syncScroll]);
 
-  const themeKey: AppTheme = (theme as AppTheme) ?? 'light';
+  const themeKey: AppTheme = (resolvedTheme as AppTheme) ?? 'light';
 
   return (
     <div className="flex-1 flex flex-col min-h-0">
@@ -328,7 +341,7 @@ export default function MarkdownEditor({
             color: 'var(--text-primary)',
           }}
         >
-          <MarkdownPreview value={content} />
+          {mode !== 'source' && <MarkdownPreview value={previewContent} />}
         </div>
       </div>
 
@@ -375,7 +388,7 @@ export default function MarkdownEditor({
               className="flex items-center gap-1 px-2.5 py-1 rounded-full shadow-lg text-xs font-medium transition-transform hover:scale-105"
               style={{ backgroundColor: 'var(--text-primary)', color: 'var(--bg-primary)' }}
             >
-              🐟 {t('Ask Fish about selection')}
+              <RobotIcon size={14} /> {t('Ask Fish about selection')}
             </button>
           </div>,
           document.body,

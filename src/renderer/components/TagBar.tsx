@@ -88,7 +88,7 @@ function TagBar({ noteId }: TagBarProps) {
           key={tag.id}
           className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs"
           style={{
-            backgroundColor: 'var(--tag-bg, rgba(59,130,246,0.1))',
+            background: 'var(--tag-bg, rgba(59,130,246,0.1))',
             color: 'var(--tag-text, #3b82f6)',
           }}
         >

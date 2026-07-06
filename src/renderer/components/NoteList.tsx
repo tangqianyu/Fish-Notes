@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useApp } from '../contexts/AppContext';
 import { useAssistant } from '../contexts/AssistantContext';
 import PasswordPrompt from './PasswordPrompt';
 import { buildNotePreview } from '../utils/mdUtils';
+import { PinIcon, RobotIcon } from './icons';
 
 interface NoteListProps {
   width: number;
@@ -33,7 +34,7 @@ function NoteList({ width, onResizeStart }: NoteListProps) {
     verifyPassword,
   } = useApp();
   const { askAboutNote } = useAssistant();
-  const { notes, selectedNoteId, viewMode } = state;
+  const { notes, selectedNoteId, selectSeq, viewMode } = state;
 
   const [contextMenu, setContextMenu] = useState<NoteContextMenu | null>(null);
   const [showPasswordPrompt, setShowPasswordPrompt] = useState(false);
@@ -138,6 +139,20 @@ function NoteList({ width, onResizeStart }: NoteListProps) {
 
   const contextNote = contextMenu ? notes.find((n) => n.id === contextMenu.noteId) : null;
 
+  // When the selection jumps (e.g. from search), scroll the list to reveal it.
+  // Keyed by id + selectSeq: re-selecting the SAME note (search again) still scrolls,
+  // while content edits (notes updates) don't keep yanking the list back.
+  const selectedItemRef = useRef<HTMLButtonElement>(null);
+  const lastScrolledKeyRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!selectedNoteId) return;
+    const key = `${selectedNoteId}:${selectSeq}`;
+    if (lastScrolledKeyRef.current === key) return;
+    if (!selectedItemRef.current) return; // list not loaded yet; retry on next notes change
+    lastScrolledKeyRef.current = key;
+    selectedItemRef.current.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }, [selectedNoteId, selectSeq, notes]);
+
   return (
     <div
       className="relative flex flex-col no-select shrink-0 transition-colors"
@@ -158,8 +173,12 @@ function NoteList({ width, onResizeStart }: NoteListProps) {
         {viewMode !== 'trash' && (
           <button
             onClick={createNote}
-            className="p-1 rounded transition-colors hover:opacity-70"
-            style={{ color: 'var(--text-tertiary)' }}
+            className="fn-accent-btn p-1 rounded-lg transition-all hover:opacity-90"
+            style={{
+              background: 'var(--accent-bg)',
+              color: 'var(--accent-fg)',
+              boxShadow: 'var(--accent-shadow)',
+            }}
             title={t('New Note')}
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -189,8 +208,9 @@ function NoteList({ width, onResizeStart }: NoteListProps) {
               key={note.id}
               note={note}
               isSelected={note.id === selectedNoteId}
-              onClick={() => selectNote(note.id)}
-              onContextMenu={(e) => handleContextMenu(e, note.id)}
+              itemRef={note.id === selectedNoteId ? selectedItemRef : undefined}
+              onSelect={selectNote}
+              onContextMenu={handleContextMenu}
             />
           ))
         )}
@@ -216,7 +236,15 @@ function NoteList({ width, onResizeStart }: NoteListProps) {
           </NoteContextMenuPopup>
         ) : (
           <NoteContextMenuPopup x={contextMenu.x} y={contextMenu.y}>
-            <ContextMenuItem label={`🐟 ${t('Ask AI')}`} onClick={handleAskAi} />
+            <ContextMenuItem
+              label={
+                <span className="inline-flex items-center gap-1.5">
+                  <RobotIcon size={14} style={{ color: 'var(--accent-solid)' }} />
+                  {t('Ask AI')}
+                </span>
+              }
+              onClick={handleAskAi}
+            />
             <div className="my-1 border-t" style={{ borderColor: 'var(--border-secondary)' }} />
             <ContextMenuItem
               label={contextNote?.isPinned ? t('Unpin') : t('Pin')}
@@ -286,37 +314,46 @@ function formatRelativeDate(
   });
 }
 
-function NoteListItem({
+const NoteListItem = memo(function NoteListItem({
   note,
   isSelected,
-  onClick,
+  itemRef,
+  onSelect,
   onContextMenu,
 }: {
   note: NoteData;
   isSelected: boolean;
-  onClick: () => void;
-  onContextMenu: (e: React.MouseEvent) => void;
+  itemRef?: React.Ref<HTMLButtonElement>;
+  onSelect: (id: string) => void;
+  onContextMenu: (e: React.MouseEvent, noteId: string) => void;
 }) {
   const { t } = useTranslation();
   const title = note.title || t('Untitled');
-  const preview = buildNotePreview(note.content);
+  // Prefer the DB-stored plain text; only fall back to stripping markdown for
+  // legacy rows that predate content_text. Avoids re-running regex over full
+  // content on every render.
+  const preview = note.contentText ? note.contentText.slice(0, 80) : buildNotePreview(note.content);
   const date = formatRelativeDate(note.updatedAt, t);
 
   return (
     <button
-      onClick={onClick}
-      onContextMenu={onContextMenu}
-      className="w-full text-left px-4 py-3 transition-colors"
-      style={{
-        borderBottom: '1px solid var(--border-secondary)',
-        backgroundColor: isSelected ? 'var(--bg-active)' : 'transparent',
-      }}
+      ref={itemRef}
+      onClick={() => onSelect(note.id)}
+      onContextMenu={(e) => onContextMenu(e, note.id)}
+      className={`fn-note-item w-full text-left px-4 py-3 ${isSelected ? 'fn-note-active' : ''}`}
+      style={{ borderBottom: '1px solid var(--border-secondary)' }}
     >
       <div
         className="flex items-center text-sm font-medium truncate"
         style={{ color: 'var(--text-primary)' }}
       >
-        {note.isPinned && <span className="mr-1 text-xs opacity-60">📌</span>}
+        {note.isPinned && (
+          <PinIcon
+            size={14}
+            className="mr-1 shrink-0"
+            style={{ color: 'var(--pin-color, var(--accent-solid))' }}
+          />
+        )}
         {note.isLocked && (
           <svg
             className="w-3.5 h-3.5 mr-1 shrink-0 opacity-60"
@@ -350,7 +387,7 @@ function NoteListItem({
       </div>
     </button>
   );
-}
+});
 
 function NoteContextMenuPopup({
   x,
@@ -396,7 +433,7 @@ function ContextMenuItem({
   onClick,
   danger = false,
 }: {
-  label: string;
+  label: React.ReactNode;
   onClick: () => void;
   danger?: boolean;
 }) {

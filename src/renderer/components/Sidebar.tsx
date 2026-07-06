@@ -1,7 +1,8 @@
-import { useMemo, useState, useRef, useEffect, useCallback } from 'react';
+import { useMemo, useState, useRef, useEffect, useCallback, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useApp } from '../contexts/AppContext';
 import { buildTagTree, type TagTreeNode } from '../utils/tagParser';
+import { NotesIcon, TrashIcon, PinIcon, HashIcon, SlidersIcon } from './icons';
 
 interface SidebarProps {
   width: number;
@@ -111,8 +112,12 @@ function Sidebar({ width, onResizeStart, onSearchClick, onSettingsClick }: Sideb
       <div className="px-3 pt-14 pb-2">
         <div
           onClick={onSearchClick}
-          className="flex items-center px-2 py-1.5 rounded-md text-sm cursor-pointer transition-colors"
-          style={{ backgroundColor: 'var(--search-bg)', color: 'var(--text-tertiary)' }}
+          className="flex items-center px-2 py-1.5 rounded-lg text-sm cursor-pointer transition-colors"
+          style={{
+            backgroundColor: 'var(--search-bg)',
+            color: 'var(--text-tertiary)',
+            border: '1px solid var(--border-primary)',
+          }}
         >
           <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
@@ -129,13 +134,13 @@ function Sidebar({ width, onResizeStart, onSearchClick, onSettingsClick }: Sideb
       {/* Nav items */}
       <nav className="flex-1 overflow-y-auto px-2 py-1">
         <SidebarItem
-          icon="📝"
+          icon={<NotesIcon size={15} />}
           label={t('All Notes')}
           active={viewMode === 'all'}
           onClick={() => setViewMode('all')}
         />
         <SidebarItem
-          icon="🗑️"
+          icon={<TrashIcon size={15} />}
           label={t('Trash')}
           active={viewMode === 'trash'}
           onClick={() => setViewMode('trash')}
@@ -183,20 +188,7 @@ function Sidebar({ width, onResizeStart, onSearchClick, onSettingsClick }: Sideb
           className="w-full flex items-center px-2 py-1.5 rounded-md text-sm transition-colors hover:opacity-80"
           style={{ color: 'var(--text-secondary)' }}
         >
-          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-            />
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-            />
-          </svg>
+          <SlidersIcon size={16} className="mr-2 shrink-0" />
           {t('Settings')}
         </button>
       </div>
@@ -294,7 +286,7 @@ function TagTreeList({
                 onDragEnd={onDragEnd}
                 onClick={() => onSelect(node.id)}
                 onContextMenu={(e) => onContextMenu(e, node)}
-                className="w-full flex items-center justify-between px-2 py-1.5 rounded-md text-sm transition-colors"
+                className={`fn-nav-item w-full flex items-center justify-between px-2 py-1.5 rounded-md text-sm ${selectedTagId === node.id ? 'fn-nav-active' : ''}`}
                 style={{
                   paddingLeft: `${8 + depth * 16}px`,
                   backgroundColor: selectedTagId === node.id ? 'var(--bg-active)' : 'transparent',
@@ -306,10 +298,18 @@ function TagTreeList({
                 }}
               >
                 <span className="flex items-center truncate">
-                  {node.isPinned && <span className="mr-1 text-xs opacity-60">📌</span>}
-                  <span className="mr-1.5" style={{ color: 'var(--text-tertiary)' }}>
-                    #
-                  </span>
+                  {node.isPinned && (
+                    <PinIcon
+                      size={13}
+                      className="mr-1 shrink-0"
+                      style={{ color: 'var(--pin-color, var(--accent-solid))' }}
+                    />
+                  )}
+                  <HashIcon
+                    size={12}
+                    className="mr-1.5 shrink-0"
+                    style={{ color: 'var(--text-tertiary)' }}
+                  />
                   {node.name}
                 </span>
                 <span className="text-xs ml-1" style={{ color: 'var(--text-tertiary)' }}>
@@ -461,7 +461,7 @@ function SidebarItem({
   active = false,
   onClick,
 }: {
-  icon: string;
+  icon: ReactNode;
   label: string;
   active?: boolean;
   onClick?: () => void;
@@ -469,13 +469,15 @@ function SidebarItem({
   return (
     <button
       onClick={onClick}
-      className="w-full flex items-center px-2 py-1.5 rounded-md text-sm transition-colors"
+      className={`fn-nav-item w-full flex items-center px-2 py-1.5 rounded-md text-sm ${active ? 'fn-nav-active' : ''}`}
       style={{
-        backgroundColor: active ? 'var(--bg-active)' : 'transparent',
-        color: active ? 'var(--text-active)' : 'var(--text-secondary)',
+        background: active ? 'var(--accent-bg)' : 'transparent',
+        color: active ? 'var(--accent-fg)' : 'var(--text-secondary)',
+        boxShadow: active ? 'var(--accent-shadow)' : undefined,
+        fontWeight: active ? 600 : undefined,
       }}
     >
-      <span className="mr-2 text-base">{icon}</span>
+      <span className="mr-2 inline-flex shrink-0">{icon}</span>
       {label}
     </button>
   );

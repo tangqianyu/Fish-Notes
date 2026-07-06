@@ -2,6 +2,7 @@ interface NoteData {
   id: string;
   title: string;
   content: string;
+  contentText: string;
   createdAt: string;
   updatedAt: string;
   isTrashed: boolean;
@@ -66,12 +67,11 @@ interface Window {
       pdf: (title: string, content: string) => Promise<boolean>;
     };
     images: {
-      saveFromPath: (filePath: string) => Promise<string>;
       saveFromBuffer: (buffer: ArrayBuffer, mimeType: string) => Promise<string>;
       pickFile: () => Promise<string | null>;
     };
     ai: {
-      getConfig: () => Promise<AIConfig>;
+      getConfig: () => Promise<PublicAIConfig>;
       setConfig: (cfg: AIConfig) => Promise<void>;
       testConnection: (
         cfg?: AIConfig,
@@ -82,9 +82,16 @@ interface Window {
         requestId: string;
         messages: ChatMessage[];
         noteContext?: string;
+        scope?: 'notes';
       }) => Promise<void>;
       abortChat: (requestId: string) => Promise<void>;
       onChatChunk: (cb: (data: { requestId: string; delta: string }) => void) => () => void;
+      onChatSources: (
+        cb: (data: { requestId: string; sources: { id: string; title: string }[] }) => void,
+      ) => () => void;
+      onChatThinking: (
+        cb: (data: { requestId: string; delta: string; tokens?: number }) => void,
+      ) => () => void;
       onChatDone: (cb: (data: { requestId: string; fullText: string }) => void) => () => void;
       onChatError: (cb: (data: { requestId: string; message: string }) => void) => () => void;
     };
@@ -110,6 +117,12 @@ interface AIConfig {
   claudePath?: string;
 }
 
+interface PublicAIConfig {
+  model: string;
+  claudePath?: string;
+  hasToken: boolean;
+}
+
 interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
@@ -129,4 +142,14 @@ interface ChatMessageData {
   content: string;
   noteId: string | null;
   createdAt: string;
+}
+
+declare module '*.webp' {
+  const src: string;
+  export default src;
+}
+
+declare module '*.gif' {
+  const src: string;
+  export default src;
 }

@@ -51,15 +51,18 @@ function Settings({ onClose }: SettingsProps) {
   const [loading, setLoading] = useState(false);
   const [assistantOn, setAssistantOn] = useState(isAssistantEnabled);
 
-  // AI config state
+  // AI config state. The token is write-only: the main process never sends it back to
+  // the renderer, so we only know whether one is stored (hasToken). An empty field on
+  // save means "keep the existing token".
   const [aiToken, setAiToken] = useState('');
+  const [aiHasToken, setAiHasToken] = useState(false);
   const [aiModel, setAiModel] = useState('claude-sonnet-4-6');
   const [aiClaudePath, setAiClaudePath] = useState('');
   const [aiTesting, setAiTesting] = useState(false);
 
   useEffect(() => {
     window.api.ai.getConfig().then((cfg) => {
-      setAiToken(cfg.token || '');
+      setAiHasToken(cfg.hasToken);
       setAiModel(cfg.model || 'claude-sonnet-4-6');
       setAiClaudePath(cfg.claudePath || '');
     });
@@ -75,8 +78,12 @@ function Settings({ onClose }: SettingsProps) {
 
   const handleSaveAI = useCallback(async () => {
     await persistAI();
+    if (aiToken.trim()) {
+      setAiHasToken(true);
+      setAiToken(''); // keep write-only: don't retain the plaintext token in the field
+    }
     message.success(t('Saved'));
-  }, [persistAI, t]);
+  }, [persistAI, aiToken, t]);
 
   const handleTestAI = useCallback(async () => {
     setAiTesting(true);
@@ -103,7 +110,102 @@ function Settings({ onClose }: SettingsProps) {
     { id: 'light' as const, label: t('Light'), preview: 'bg-white border-gray-200' },
     { id: 'dark' as const, label: t('Dark'), preview: 'bg-gray-900 border-gray-700' },
     { id: 'solarized' as const, label: t('Solarized'), preview: 'bg-[#fdf6e3] border-[#e0d9c4]' },
-    { id: 'anime' as const, label: t('Anime'), preview: 'bg-[#fef5f8] border-[#f0d4e0]' },
+    {
+      id: 'anime' as const,
+      label: t('Anime (Day)'),
+      preview: 'border-transparent',
+      previewStyle: {
+        background: 'linear-gradient(135deg, #FFD9A8 0%, #FFB0A0 45%, #8E7BD8 100%)',
+      },
+    },
+    {
+      id: 'anime-night' as const,
+      label: t('Anime (Night)'),
+      preview: 'border-transparent',
+      previewStyle: {
+        background: 'linear-gradient(135deg, #6E8DFF 0%, #4A3E8E 55%, #14142B 100%)',
+      },
+    },
+    {
+      id: 'cinnamoroll' as const,
+      label: t('Cinnamoroll (Day)'),
+      preview: 'border-transparent',
+      previewStyle: {
+        background: 'linear-gradient(135deg, #E3F2FD 0%, #A8CDF8 55%, #C9C2F8 100%)',
+      },
+    },
+    {
+      id: 'cinnamoroll-night' as const,
+      label: t('Cinnamoroll (Night)'),
+      preview: 'border-transparent',
+      previewStyle: {
+        background: 'linear-gradient(135deg, #7EA6FF 0%, #3A3F73 55%, #1C2340 100%)',
+      },
+    },
+    {
+      id: 'kuromi' as const,
+      label: t('Kuromi (Day)'),
+      preview: 'border-transparent',
+      previewStyle: {
+        background: 'linear-gradient(135deg, #F3EDFA 0%, #C9A8F0 55%, #E85CA8 100%)',
+      },
+    },
+    {
+      id: 'kuromi-night' as const,
+      label: t('Kuromi (Night)'),
+      preview: 'border-transparent',
+      previewStyle: {
+        background: 'linear-gradient(135deg, #A06CE8 0%, #4A2E7A 55%, #171223 100%)',
+      },
+    },
+    {
+      id: 'melody' as const,
+      label: t('My Melody (Day)'),
+      preview: 'border-transparent',
+      previewStyle: {
+        background: 'linear-gradient(135deg, #FFE9F1 0%, #F9A8C6 55%, #EC5F94 100%)',
+      },
+    },
+    {
+      id: 'melody-night' as const,
+      label: t('My Melody (Night)'),
+      preview: 'border-transparent',
+      previewStyle: {
+        background: 'linear-gradient(135deg, #F48EB4 0%, #7A3C5E 55%, #241521 100%)',
+      },
+    },
+    {
+      id: 'totoro' as const,
+      label: t('Totoro (Day)'),
+      preview: 'border-transparent',
+      previewStyle: {
+        background: 'linear-gradient(135deg, #F2F5E3 0%, #A8CC8A 55%, #4E8A57 100%)',
+      },
+    },
+    {
+      id: 'totoro-night' as const,
+      label: t('Totoro (Night)'),
+      preview: 'border-transparent',
+      previewStyle: {
+        background: 'linear-gradient(135deg, #98C455 0%, #2F4A2A 55%, #16211A 100%)',
+      },
+    },
+    {
+      id: 'ink' as const,
+      label: t('Ink (Day)'),
+      preview: 'border-transparent',
+      previewStyle: {
+        background: 'linear-gradient(135deg, #F9F6EF 0%, #D8D0BC 55%, #4A443C 100%)',
+      },
+    },
+    {
+      id: 'ink-night' as const,
+      label: t('Ink (Night)'),
+      preview: 'border-transparent',
+      previewStyle: {
+        background: 'linear-gradient(135deg, #8A837A 0%, #3E3A34 55%, #1E1C19 100%)',
+      },
+    },
   ];
 
   const resetForm = useCallback(() => {
@@ -223,17 +325,22 @@ function Settings({ onClose }: SettingsProps) {
             <div className="text-sm font-medium mb-3" style={{ color: 'var(--text-secondary)' }}>
               {t('Theme')}
             </div>
-            <div className="flex gap-3">
+            <div className="grid grid-cols-3 gap-3">
               {themes.map((th) => (
                 <button
                   key={th.id}
                   onClick={() => setTheme(th.id)}
-                  className={`flex-1 flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-all ${
-                    theme === th.id ? 'border-blue-500 ring-2 ring-blue-200' : 'border-transparent'
-                  }`}
-                  style={{ backgroundColor: 'var(--bg-tertiary)' }}
+                  className="flex flex-col items-center gap-2 p-3 rounded-lg border-2 border-transparent transition-all hover:-translate-y-0.5"
+                  style={{
+                    backgroundColor: 'var(--bg-tertiary)',
+                    boxShadow:
+                      theme === th.id ? '0 0 0 2px var(--accent-solid, #3b82f6)' : undefined,
+                  }}
                 >
-                  <div className={`w-full h-12 rounded-md border ${th.preview}`} />
+                  <div
+                    className={`w-full h-12 rounded-md border ${th.preview}`}
+                    style={'previewStyle' in th ? th.previewStyle : undefined}
+                  />
                   <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
                     {th.label}
                   </span>
@@ -252,12 +359,15 @@ function Settings({ onClose }: SettingsProps) {
                 <button
                   key={lang.id}
                   onClick={() => handleLanguageChange(lang.id)}
-                  className={`flex-1 px-3 py-2 rounded-lg border-2 text-sm transition-all ${
-                    i18n.language === lang.id
-                      ? 'border-blue-500 ring-2 ring-blue-200'
-                      : 'border-transparent'
-                  }`}
-                  style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}
+                  className="flex-1 px-3 py-2 rounded-lg border-2 border-transparent text-sm transition-all hover:-translate-y-0.5"
+                  style={{
+                    backgroundColor: 'var(--bg-tertiary)',
+                    color: 'var(--text-secondary)',
+                    boxShadow:
+                      i18n.language === lang.id
+                        ? '0 0 0 2px var(--accent-solid, #3b82f6)'
+                        : undefined,
+                  }}
                 >
                   {lang.label}
                 </button>
@@ -495,7 +605,7 @@ function Settings({ onClose }: SettingsProps) {
                   onChange={(e) => {
                     setAiToken(e.target.value);
                   }}
-                  placeholder="sk-ant-oat01-..."
+                  placeholder={aiHasToken ? t('Token saved — leave blank to keep') : 'sk-ant-oat01-...'}
                   className="w-full px-3 py-2 rounded-lg border text-sm outline-none font-mono"
                   style={{
                     backgroundColor: 'var(--bg-secondary)',

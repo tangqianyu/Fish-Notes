@@ -1,4 +1,4 @@
-import { app, BrowserWindow, protocol, net, shell } from 'electron';
+import { app, BrowserWindow, protocol, net, shell, session } from 'electron';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
 import { initDatabase } from './main/database';
@@ -41,6 +41,10 @@ const createWindow = () => {
     trafficLightPosition: { x: 16, y: 16 },
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      sandbox: true,
+      nodeIntegration: false,
+      webSecurity: true,
     },
   });
 
@@ -68,15 +72,52 @@ const createWindow = () => {
   }
 };
 
+// Content-Security-Policy: strict in production (scripts only from the bundle), relaxed
+// in dev so Vite HMR (inline scripts, eval, websocket) keeps working. `fish-image:` and
+// `data:` are allowed for images; inline styles are needed for the app's style attributes.
+function applyCsp() {
+  const isDev = !!MAIN_WINDOW_VITE_DEV_SERVER_URL;
+  const policy = isDev
+    ? "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: fish-image:; font-src 'self' data:; connect-src 'self' ws: http: https:;"
+    : "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: fish-image:; font-src 'self' data:; connect-src 'self';";
+  session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+    callback({
+      responseHeaders: {
+        ...details.responseHeaders,
+        'Content-Security-Policy': [policy],
+      },
+    });
+  });
+}
+
 app.on('ready', () => {
   initDatabase();
   ensureImagesDir();
+  applyCsp();
 
-  // Register fish-image:// protocol to serve local images
+  // Register fish-image:// protocol to serve local images. The filename must resolve to a
+  // file *inside* the images dir — reject any path-traversal attempt (`../`, absolute paths,
+  // URL-encoded separators) so malicious note content can't read arbitrary local files.
   protocol.handle('fish-image', (request) => {
-    const filename = request.url.replace(/^fish-image:\/\/\/?/, '');
-    const filePath = path.join(getImagesDir(), filename);
-    return net.fetch(`file://${filePath}`);
+    const notFound = () => new Response(null, { status: 404 });
+    let filename: string;
+    try {
+      filename = decodeURIComponent(request.url.replace(/^fish-image:\/\/\/?/, ''));
+    } catch {
+      return notFound();
+    }
+    // Keep only the final path segment; strip any directory components entirely.
+    const safeName = path.basename(filename);
+    if (!safeName || safeName !== filename || safeName.includes('..')) {
+      return notFound();
+    }
+    const imagesDir = getImagesDir();
+    const filePath = path.join(imagesDir, safeName);
+    const resolved = path.resolve(filePath);
+    if (resolved !== filePath || !resolved.startsWith(imagesDir + path.sep)) {
+      return notFound();
+    }
+    return net.fetch(`file://${resolved}`);
   });
 
   registerIpcHandlers();

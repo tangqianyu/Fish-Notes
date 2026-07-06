@@ -4,6 +4,7 @@ import {
   useReducer,
   useEffect,
   useCallback,
+  useMemo,
   useState,
   type ReactNode,
 } from 'react';
@@ -15,6 +16,8 @@ interface AppState {
   notes: NoteData[];
   tags: TagData[];
   selectedNoteId: string | null;
+  /** bumps on every explicit SELECT_NOTE — lets the list re-reveal even for the same id */
+  selectSeq: number;
   viewMode: ViewMode;
   selectedTagId: string | null;
 }
@@ -35,7 +38,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
     case 'SET_TAGS':
       return { ...state, tags: action.tags };
     case 'SELECT_NOTE':
-      return { ...state, selectedNoteId: action.id };
+      return { ...state, selectedNoteId: action.id, selectSeq: state.selectSeq + 1 };
     case 'ADD_NOTE':
       return {
         ...state,
@@ -103,6 +106,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     notes: [],
     tags: [],
     selectedNoteId: null,
+    selectSeq: 0,
     viewMode: 'all',
     selectedTagId: null,
   });
@@ -314,39 +318,64 @@ export function AppProvider({ children }: { children: ReactNode }) {
     await refreshNotes();
   }, [refreshNotes]);
 
-  return (
-    <AppContext.Provider
-      value={{
-        state,
-        createNote,
-        selectNote,
-        updateNoteTitle,
-        updateNoteContent,
-        addNoteTag,
-        removeNoteTag,
-        trashNote,
-        restoreNote,
-        deleteNotePermanently,
-        setViewMode,
-        refreshNotes,
-        refreshTags,
-        deleteTag,
-        renameTag,
-        togglePinTag,
-        reorderTags,
-        togglePinNote,
-        encryptionReady,
-        sessionUnlocked,
-        lockNote,
-        unlockNote,
-        verifyPassword,
-        lockAllNotes,
-        refreshEncryptionState,
-      }}
-    >
-      {children}
-    </AppContext.Provider>
+  const value = useMemo<AppContextValue>(
+    () => ({
+      state,
+      createNote,
+      selectNote,
+      updateNoteTitle,
+      updateNoteContent,
+      addNoteTag,
+      removeNoteTag,
+      trashNote,
+      restoreNote,
+      deleteNotePermanently,
+      setViewMode,
+      refreshNotes,
+      refreshTags,
+      deleteTag,
+      renameTag,
+      togglePinTag,
+      reorderTags,
+      togglePinNote,
+      encryptionReady,
+      sessionUnlocked,
+      lockNote,
+      unlockNote,
+      verifyPassword,
+      lockAllNotes,
+      refreshEncryptionState,
+    }),
+    [
+      state,
+      createNote,
+      selectNote,
+      updateNoteTitle,
+      updateNoteContent,
+      addNoteTag,
+      removeNoteTag,
+      trashNote,
+      restoreNote,
+      deleteNotePermanently,
+      setViewMode,
+      refreshNotes,
+      refreshTags,
+      deleteTag,
+      renameTag,
+      togglePinTag,
+      reorderTags,
+      togglePinNote,
+      encryptionReady,
+      sessionUnlocked,
+      lockNote,
+      unlockNote,
+      verifyPassword,
+      lockAllNotes,
+      refreshEncryptionState,
+    ],
   );
+
+  return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }
 
 export function useApp() {

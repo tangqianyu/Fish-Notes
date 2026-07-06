@@ -9,6 +9,7 @@ export interface SearchResult {
   createdAt: string;
   updatedAt: string;
   isTrashed: boolean;
+  isLocked: boolean;
 }
 
 /**
@@ -40,12 +41,14 @@ export function searchNotes(query: string): SearchResult[] {
       createdAt: notes.createdAt,
       updatedAt: notes.updatedAt,
       isTrashed: notes.isTrashed,
+      isLocked: notes.isLocked,
     })
     .from(notes)
     .where(
       sql`rowid IN (SELECT rowid FROM notes_fts WHERE notes_fts MATCH ${ftsQuery}) AND ${notes.isTrashed} = 0`,
     )
-    .all();
+    .all() as SearchResult[];
 
-  return results as SearchResult[];
+  // Never leak encrypted ciphertext to the renderer — blank locked notes' content.
+  return results.map((r) => (r.isLocked ? { ...r, content: '' } : r));
 }

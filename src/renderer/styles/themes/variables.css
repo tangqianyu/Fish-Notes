@@ -1,64 +1,76 @@
-/* Light theme (default) */
+/* Light theme (default) — 1b gradient accents: blue → violet */
 :root,
 [data-theme='light'] {
   --bg-primary: #ffffff;
-  --bg-secondary: #f9fafb;
-  --bg-tertiary: #f3f4f6;
-  --bg-hover: #f3f4f6;
-  --bg-active: #dbeafe;
+  --bg-secondary: #f5f6fb;
+  --bg-tertiary: #eceef8;
+  --bg-hover: #eceef8;
+  --bg-active: rgba(93, 103, 246, 0.1);
 
-  --text-primary: #111827;
-  --text-secondary: #4b5563;
-  --text-tertiary: #9ca3af;
-  --text-active: #1d4ed8;
+  --text-primary: #171923;
+  --text-secondary: #4b5068;
+  --text-tertiary: #878ca0;
+  --text-active: #5b5ff0;
 
-  --border-primary: #e5e7eb;
-  --border-secondary: #f3f4f6;
+  --border-primary: #e7e9f4;
+  --border-secondary: #f0f1f8;
 
-  --search-bg: rgba(229, 231, 235, 0.6);
+  --search-bg: rgba(255, 255, 255, 0.9);
 
-  --overlay-bg: rgba(0, 0, 0, 0.3);
+  --overlay-bg: rgba(23, 25, 35, 0.3);
   --card-bg: #ffffff;
-  --card-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  --card-shadow: 0 25px 50px -12px rgba(93, 103, 246, 0.25);
 
-  --code-bg: #f3f4f6;
-  --pre-bg: #f9fafb;
+  --code-bg: #f0f1f8;
+  --pre-bg: #f5f6fb;
 
-  --tag-bg: rgba(59, 130, 246, 0.1);
-  --tag-text: #3b82f6;
+  --tag-bg: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(124, 92, 252, 0.12));
+  --tag-text: #5b5ff0;
 
   --highlight-bg: #fef08a;
+
+  --accent-bg: linear-gradient(135deg, #3b82f6, #7c5cfc);
+  --accent-fg: #ffffff;
+  --accent-shadow: 0 4px 12px -4px rgba(93, 103, 246, 0.5);
+  --accent-soft-bg: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(124, 92, 252, 0.1));
+  --accent-solid: #7c5cfc;
 }
 
-/* Dark theme */
+/* Dark theme — 1b gradient accents: light blue → violet on deep navy */
 [data-theme='dark'] {
-  --bg-primary: #1a1a2e;
-  --bg-secondary: #16213e;
-  --bg-tertiary: #0f3460;
-  --bg-hover: #0f3460;
-  --bg-active: #1e3a5f;
+  --bg-primary: #12141f;
+  --bg-secondary: #0d0f18;
+  --bg-tertiary: #161a28;
+  --bg-hover: #161a28;
+  --bg-active: rgba(125, 124, 255, 0.14);
 
-  --text-primary: #e2e8f0;
-  --text-secondary: #94a3b8;
-  --text-tertiary: #64748b;
-  --text-active: #60a5fa;
+  --text-primary: #e8eaf6;
+  --text-secondary: #a9aec9;
+  --text-tertiary: #7c82a0;
+  --text-active: #9d7bff;
 
-  --border-primary: #1e293b;
-  --border-secondary: #1e293b;
+  --border-primary: #232739;
+  --border-secondary: #1e2233;
 
-  --search-bg: rgba(30, 41, 59, 0.8);
+  --search-bg: rgba(22, 26, 40, 0.9);
 
   --overlay-bg: rgba(0, 0, 0, 0.5);
-  --card-bg: #1e293b;
-  --card-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  --card-bg: #161a28;
+  --card-shadow: 0 25px 50px -12px rgba(93, 103, 246, 0.45);
 
-  --code-bg: #0f3460;
-  --pre-bg: #16213e;
+  --code-bg: #1b2033;
+  --pre-bg: #10121c;
 
-  --tag-bg: rgba(96, 165, 250, 0.15);
-  --tag-text: #60a5fa;
+  --tag-bg: linear-gradient(135deg, rgba(91, 156, 255, 0.16), rgba(157, 123, 255, 0.16));
+  --tag-text: #9d7bff;
 
   --highlight-bg: rgba(250, 204, 21, 0.3);
+
+  --accent-bg: linear-gradient(135deg, #5b9cff, #9d7bff);
+  --accent-fg: #ffffff;
+  --accent-shadow: 0 4px 16px -4px rgba(125, 124, 255, 0.6);
+  --accent-soft-bg: linear-gradient(135deg, rgba(91, 156, 255, 0.14), rgba(157, 123, 255, 0.14));
+  --accent-solid: #9d7bff;
 }
 
 /* Solarized theme */
@@ -90,35 +102,482 @@
   --tag-text: #268bd2;
 
   --highlight-bg: #e8dba8;
+
+  --accent-bg: var(--bg-active);
+  --accent-fg: var(--text-active);
+  --accent-shadow: none;
+  --accent-soft-bg: rgba(38, 139, 210, 0.12);
+  --accent-solid: #268bd2;
 }
 
-/* Anime theme — sakura pink & lavender */
+/* Anime theme · Dusk — warm cream with sunset orange→magenta gradient accents */
 [data-theme='anime'] {
-  --bg-primary: #fef5f8;
-  --bg-secondary: #f8e8ef;
-  --bg-tertiary: #f0dce6;
-  --bg-hover: #f0dce6;
-  --bg-active: #f5d0e0;
+  --bg-primary: #fffbf5;
+  --bg-secondary: #faf1e6;
+  --bg-tertiary: #f5e9db;
+  --bg-hover: #f5e9db;
+  --bg-active: rgba(232, 120, 90, 0.12);
 
-  --text-primary: #2d1b30;
-  --text-secondary: #6b4c6e;
-  --text-tertiary: #a88aab;
-  --text-active: #e84393;
+  --text-primary: #392e2b;
+  --text-secondary: #6e5a52;
+  --text-tertiary: #a18a7e;
+  --text-active: #c2532f;
 
-  --border-primary: #f0d4e0;
-  --border-secondary: #f8e8ef;
+  --border-primary: #f0e3d3;
+  --border-secondary: #f5e9db;
 
-  --search-bg: rgba(240, 212, 224, 0.6);
+  --search-bg: rgba(255, 255, 255, 0.85);
 
-  --overlay-bg: rgba(45, 27, 48, 0.3);
-  --card-bg: #fef5f8;
-  --card-shadow: 0 25px 50px -12px rgba(232, 67, 147, 0.15);
+  --overlay-bg: rgba(57, 46, 43, 0.3);
+  --card-bg: #ffffff;
+  --card-shadow: 0 25px 50px -12px rgba(232, 120, 90, 0.35);
 
-  --code-bg: #f3e4ed;
-  --pre-bg: #f8e8ef;
+  --code-bg: #f5e9db;
+  --pre-bg: #faf1e6;
 
-  --tag-bg: rgba(232, 67, 147, 0.1);
-  --tag-text: #e84393;
+  --tag-bg: linear-gradient(135deg, rgba(255, 147, 87, 0.14), rgba(217, 107, 200, 0.14));
+  --tag-text: #c2532f;
 
-  --highlight-bg: #fcd5e8;
+  --highlight-bg: #ffe1b8;
+
+  --accent-bg: linear-gradient(135deg, #ff9357, #d96bc8);
+  --accent-fg: #ffffff;
+  --accent-shadow: 0 4px 12px -4px rgba(232, 120, 90, 0.55);
+  --accent-soft-bg: linear-gradient(135deg, rgba(255, 147, 87, 0.14), rgba(217, 107, 200, 0.14));
+  --accent-solid: #d96bc8;
+}
+
+/* Cinnamoroll theme · Cloud Day — milk white & sky blue, blush pink accents */
+[data-theme='cinnamoroll'] {
+  --bg-primary: #fbfdff;
+  --bg-secondary: #eef6fd;
+  --bg-tertiary: #e3f0fb;
+  --bg-hover: #e3f0fb;
+  --bg-active: rgba(111, 187, 240, 0.14);
+
+  --text-primary: #3a4a5c;
+  --text-secondary: #5e7288;
+  --text-tertiary: #93a9be;
+  --text-active: #3e8fd8;
+
+  --border-primary: #dfecf8;
+  --border-secondary: #eaf3fb;
+
+  --search-bg: rgba(255, 255, 255, 0.9);
+
+  --overlay-bg: rgba(58, 74, 92, 0.3);
+  --card-bg: #ffffff;
+  --card-shadow: 0 25px 50px -12px rgba(111, 187, 240, 0.4);
+
+  --code-bg: #e8f2fc;
+  --pre-bg: #f2f8fe;
+
+  --tag-bg: linear-gradient(135deg, rgba(111, 187, 240, 0.16), rgba(155, 168, 248, 0.16));
+  --tag-text: #3e8fd8;
+
+  --highlight-bg: #ffe3ef;
+
+  --accent-bg: linear-gradient(135deg, #6fbbf0, #9ba8f8);
+  --accent-fg: #ffffff;
+  --accent-shadow: 0 4px 12px -4px rgba(111, 187, 240, 0.6);
+  --accent-soft-bg: linear-gradient(135deg, rgba(111, 187, 240, 0.16), rgba(155, 168, 248, 0.16));
+  --accent-solid: #7fa8f4;
+
+  /* blush pink — pins & small flourishes only */
+  --pin-color: #f5a8c4;
+  --cinna-body: #ffffff;
+  --cinna-line: #a9c7e8;
+}
+
+/* Cinnamoroll theme · Dream Night — sleeping on a cloud in a pastel night sky */
+[data-theme='cinnamoroll-night'] {
+  --bg-primary: #1c2340;
+  --bg-secondary: #171d36;
+  --bg-tertiary: #222a4e;
+  --bg-hover: #222a4e;
+  --bg-active: rgba(126, 166, 255, 0.16);
+
+  --text-primary: #e6ecff;
+  --text-secondary: #afbbdd;
+  --text-tertiary: #7d89af;
+  --text-active: #9bc4ff;
+
+  --border-primary: #2a335c;
+  --border-secondary: #252e52;
+
+  --search-bg: rgba(34, 42, 78, 0.85);
+
+  --overlay-bg: rgba(5, 8, 22, 0.5);
+  --card-bg: #222a4e;
+  --card-shadow: 0 25px 50px -12px rgba(126, 166, 255, 0.45);
+
+  --code-bg: #283158;
+  --pre-bg: #192040;
+
+  --tag-bg: linear-gradient(135deg, rgba(126, 166, 255, 0.18), rgba(182, 156, 255, 0.18));
+  --tag-text: #9bc4ff;
+
+  --highlight-bg: rgba(240, 168, 207, 0.28);
+
+  --accent-bg: linear-gradient(135deg, #7ea6ff, #b69cff);
+  --accent-fg: #ffffff;
+  --accent-shadow: 0 4px 14px -4px rgba(126, 166, 255, 0.6);
+  --accent-soft-bg: linear-gradient(135deg, rgba(126, 166, 255, 0.16), rgba(182, 156, 255, 0.16));
+  --accent-solid: #9bb1ff;
+
+  --pin-color: #f0a8cf;
+  --cinna-body: #eef1ff;
+  --cinna-line: #55639a;
+}
+
+/* Anime theme · Starry Night — deep indigo with blue→violet gradient accents */
+[data-theme='anime-night'] {
+  --bg-primary: #14142b;
+  --bg-secondary: #100f23;
+  --bg-tertiary: #1a1938;
+  --bg-hover: #1a1938;
+  --bg-active: rgba(199, 123, 255, 0.16);
+
+  --text-primary: #ebe9ff;
+  --text-secondary: #b3afda;
+  --text-tertiary: #918dbe;
+  --text-active: #c77bff;
+
+  --border-primary: #272652;
+  --border-secondary: #232250;
+
+  --search-bg: rgba(26, 25, 56, 0.8);
+
+  --overlay-bg: rgba(6, 6, 20, 0.5);
+  --card-bg: #1a1938;
+  --card-shadow: 0 25px 50px -12px rgba(140, 120, 255, 0.45);
+
+  --code-bg: #201f45;
+  --pre-bg: #1a1938;
+
+  --tag-bg: linear-gradient(135deg, rgba(110, 141, 255, 0.18), rgba(199, 123, 255, 0.18));
+  --tag-text: #c77bff;
+
+  --highlight-bg: rgba(255, 214, 130, 0.25);
+
+  --accent-bg: linear-gradient(135deg, #6e8dff, #c77bff);
+  --accent-fg: #ffffff;
+  --accent-shadow: 0 4px 16px -4px rgba(150, 125, 255, 0.6);
+  --accent-soft-bg: linear-gradient(135deg, rgba(110, 141, 255, 0.16), rgba(199, 123, 255, 0.16));
+  --accent-solid: #c77bff;
+}
+
+/* Kuromi theme · Cool Day — lavender white with purple→devil-pink gradients */
+[data-theme='kuromi'] {
+  --bg-primary: #faf8fc;
+  --bg-secondary: #f1ecf7;
+  --bg-tertiary: #e7dff1;
+  --bg-hover: #e7dff1;
+  --bg-active: rgba(154, 106, 214, 0.14);
+
+  --text-primary: #2e2438;
+  --text-secondary: #5a4b6e;
+  --text-tertiary: #9b8bb0;
+  --text-active: #8b5cd6;
+
+  --border-primary: #e7dff1;
+  --border-secondary: #f0eaf7;
+
+  --search-bg: rgba(255, 255, 255, 0.9);
+
+  --overlay-bg: rgba(46, 36, 56, 0.35);
+  --card-bg: #ffffff;
+  --card-shadow: 0 25px 50px -12px rgba(139, 92, 214, 0.35);
+
+  --code-bg: #efe8f7;
+  --pre-bg: #f5f0fa;
+
+  --tag-bg: linear-gradient(135deg, rgba(139, 92, 214, 0.14), rgba(232, 92, 168, 0.14));
+  --tag-text: #8b5cd6;
+
+  --highlight-bg: #f8d8ec;
+
+  --accent-bg: linear-gradient(135deg, #8b5cd6, #e85ca8);
+  --accent-fg: #ffffff;
+  --accent-shadow: 0 4px 12px -4px rgba(139, 92, 214, 0.5);
+  --accent-soft-bg: linear-gradient(135deg, rgba(139, 92, 214, 0.14), rgba(232, 92, 168, 0.14));
+  --accent-solid: #a85cd6;
+
+  --pin-color: #e85ca8;
+}
+
+/* Kuromi theme · Devil Night — black-purple punk with hot pink pops */
+[data-theme='kuromi-night'] {
+  --bg-primary: #171223;
+  --bg-secondary: #120e1c;
+  --bg-tertiary: #221a33;
+  --bg-hover: #221a33;
+  --bg-active: rgba(196, 124, 255, 0.16);
+
+  --text-primary: #ece4f8;
+  --text-secondary: #b5a6cc;
+  --text-tertiary: #7e6f96;
+  --text-active: #c98bf5;
+
+  --border-primary: #2c2244;
+  --border-secondary: #251c3a;
+
+  --search-bg: rgba(34, 26, 51, 0.85);
+
+  --overlay-bg: rgba(8, 5, 16, 0.55);
+  --card-bg: #221a33;
+  --card-shadow: 0 25px 50px -12px rgba(160, 108, 232, 0.45);
+
+  --code-bg: #261d3d;
+  --pre-bg: #1b1530;
+
+  --tag-bg: linear-gradient(135deg, rgba(160, 108, 232, 0.2), rgba(240, 101, 184, 0.2));
+  --tag-text: #c98bf5;
+
+  --highlight-bg: rgba(240, 101, 184, 0.25);
+
+  --accent-bg: linear-gradient(135deg, #a06ce8, #f065b8);
+  --accent-fg: #ffffff;
+  --accent-shadow: 0 4px 14px -4px rgba(160, 108, 232, 0.6);
+  --accent-soft-bg: linear-gradient(135deg, rgba(160, 108, 232, 0.16), rgba(240, 101, 184, 0.16));
+  --accent-solid: #c86acf;
+
+  --pin-color: #f065b8;
+}
+
+/* My Melody theme · Strawberry Milk — creamy white with pink gradients */
+[data-theme='melody'] {
+  --bg-primary: #fffafb;
+  --bg-secondary: #fdeff3;
+  --bg-tertiary: #f9e2e9;
+  --bg-hover: #f9e2e9;
+  --bg-active: rgba(240, 130, 168, 0.13);
+
+  --text-primary: #46323c;
+  --text-secondary: #6e5560;
+  --text-tertiary: #b195a0;
+  --text-active: #e0608e;
+
+  --border-primary: #f6dfe7;
+  --border-secondary: #fbebf0;
+
+  --search-bg: rgba(255, 255, 255, 0.9);
+
+  --overlay-bg: rgba(70, 50, 60, 0.32);
+  --card-bg: #ffffff;
+  --card-shadow: 0 25px 50px -12px rgba(236, 95, 148, 0.32);
+
+  --code-bg: #f9e4eb;
+  --pre-bg: #fceff4;
+
+  --tag-bg: linear-gradient(135deg, rgba(249, 139, 176, 0.16), rgba(236, 95, 148, 0.16));
+  --tag-text: #de5a8c;
+
+  --highlight-bg: #ffe0eb;
+
+  --accent-bg: linear-gradient(135deg, #f893b6, #ec5f94);
+  --accent-fg: #ffffff;
+  --accent-shadow: 0 4px 12px -4px rgba(236, 95, 148, 0.45);
+  --accent-soft-bg: linear-gradient(135deg, rgba(249, 139, 176, 0.15), rgba(236, 95, 148, 0.15));
+  --accent-solid: #ef7aa6;
+
+  --pin-color: #ec5f94;
+}
+
+/* My Melody theme · Berry Night — deep plum with glowing pink */
+[data-theme='melody-night'] {
+  --bg-primary: #241521;
+  --bg-secondary: #1d1019;
+  --bg-tertiary: #33202d;
+  --bg-hover: #33202d;
+  --bg-active: rgba(244, 142, 180, 0.16);
+
+  --text-primary: #f7e6ee;
+  --text-secondary: #d0aec0;
+  --text-tertiary: #9a7288;
+  --text-active: #f48eb4;
+
+  --border-primary: #3c2536;
+  --border-secondary: #33202d;
+
+  --search-bg: rgba(51, 32, 45, 0.85);
+
+  --overlay-bg: rgba(14, 6, 12, 0.55);
+  --card-bg: #33202d;
+  --card-shadow: 0 25px 50px -12px rgba(244, 142, 180, 0.4);
+
+  --code-bg: #3a2433;
+  --pre-bg: #281826;
+
+  --tag-bg: linear-gradient(135deg, rgba(244, 142, 180, 0.2), rgba(224, 106, 164, 0.2));
+  --tag-text: #f48eb4;
+
+  --highlight-bg: rgba(255, 155, 192, 0.25);
+
+  --accent-bg: linear-gradient(135deg, #f48eb4, #e06aa4);
+  --accent-fg: #ffffff;
+  --accent-shadow: 0 4px 14px -4px rgba(244, 142, 180, 0.55);
+  --accent-soft-bg: linear-gradient(135deg, rgba(244, 142, 180, 0.16), rgba(224, 106, 164, 0.16));
+  --accent-solid: #ee84b0;
+
+  --pin-color: #ff9bc0;
+}
+
+/* Totoro theme · Forest Morning — cream & moss green, acorn brown pins */
+[data-theme='totoro'] {
+  --bg-primary: #fbfbf4;
+  --bg-secondary: #eff2e4;
+  --bg-tertiary: #e2e8d2;
+  --bg-hover: #e2e8d2;
+  --bg-active: rgba(122, 155, 90, 0.14);
+
+  --text-primary: #33402c;
+  --text-secondary: #5c6b51;
+  --text-tertiary: #97a588;
+  --text-active: #5b8a46;
+
+  --border-primary: #e1e7d1;
+  --border-secondary: #edf1e1;
+
+  --search-bg: rgba(255, 255, 255, 0.9);
+
+  --overlay-bg: rgba(51, 64, 44, 0.35);
+  --card-bg: #ffffff;
+  --card-shadow: 0 25px 50px -12px rgba(107, 163, 94, 0.35);
+
+  --code-bg: #eaf0dc;
+  --pre-bg: #f2f5e8;
+
+  --tag-bg: linear-gradient(135deg, rgba(107, 163, 94, 0.15), rgba(78, 138, 87, 0.15));
+  --tag-text: #4e8a57;
+
+  --highlight-bg: #f1e3b2;
+
+  --accent-bg: linear-gradient(135deg, #8fbc6f, #4e8a57);
+  --accent-fg: #ffffff;
+  --accent-shadow: 0 4px 12px -4px rgba(107, 163, 94, 0.45);
+  --accent-soft-bg: linear-gradient(135deg, rgba(143, 188, 111, 0.16), rgba(78, 138, 87, 0.16));
+  --accent-solid: #6ba35e;
+
+  /* acorn brown */
+  --pin-color: #c08552;
+}
+
+/* Totoro theme · Firefly Night — deep forest with glowing yellow-green */
+[data-theme='totoro-night'] {
+  --bg-primary: #16211a;
+  --bg-secondary: #101a13;
+  --bg-tertiary: #223122;
+  --bg-hover: #223122;
+  --bg-active: rgba(158, 214, 130, 0.14);
+
+  --text-primary: #e4eedd;
+  --text-secondary: #abc2a2;
+  --text-tertiary: #74886f;
+  --text-active: #a8d88a;
+
+  --border-primary: #2a3b28;
+  --border-secondary: #223122;
+
+  --search-bg: rgba(34, 49, 34, 0.85);
+
+  --overlay-bg: rgba(5, 10, 6, 0.55);
+  --card-bg: #223122;
+  --card-shadow: 0 25px 50px -12px rgba(158, 214, 130, 0.35);
+
+  --code-bg: #253a23;
+  --pre-bg: #1b2a1b;
+
+  --tag-bg: linear-gradient(135deg, rgba(158, 214, 130, 0.18), rgba(224, 216, 120, 0.18));
+  --tag-text: #a8d88a;
+
+  --highlight-bg: rgba(228, 208, 107, 0.25);
+
+  --accent-bg: linear-gradient(135deg, #5e9e4c, #98c455);
+  --accent-fg: #ffffff;
+  --accent-shadow: 0 4px 14px -4px rgba(152, 196, 85, 0.5);
+  --accent-soft-bg: linear-gradient(135deg, rgba(94, 158, 76, 0.18), rgba(152, 196, 85, 0.18));
+  --accent-solid: #8fc468;
+
+  /* firefly yellow */
+  --pin-color: #e4d06b;
+}
+
+/* Ink Paper theme · Rice Paper — warm paper white, ink black, cinnabar red */
+[data-theme='ink'] {
+  --bg-primary: #f9f6ef;
+  --bg-secondary: #f1ede2;
+  --bg-tertiary: #e7e1d2;
+  --bg-hover: #e7e1d2;
+  --bg-active: rgba(60, 56, 52, 0.08);
+
+  --text-primary: #2b2723;
+  --text-secondary: #5a544b;
+  --text-tertiary: #9c9485;
+  --text-active: #b03a2e;
+
+  --border-primary: #e4dece;
+  --border-secondary: #eee9dc;
+
+  --search-bg: rgba(253, 251, 245, 0.9);
+
+  --overlay-bg: rgba(43, 39, 35, 0.35);
+  --card-bg: #fdfbf5;
+  --card-shadow: 0 25px 50px -12px rgba(43, 39, 35, 0.25);
+
+  --code-bg: #eee8d9;
+  --pre-bg: #f3efe4;
+
+  --tag-bg: rgba(176, 58, 46, 0.1);
+  --tag-text: #b03a2e;
+
+  --highlight-bg: #f1e5c0;
+
+  --accent-bg: linear-gradient(135deg, #4a443c, #2b2723);
+  --accent-fg: #f9f6ef;
+  --accent-shadow: 0 4px 12px -4px rgba(43, 39, 35, 0.35);
+  --accent-soft-bg: rgba(60, 56, 52, 0.08);
+  --accent-solid: #b03a2e;
+
+  /* cinnabar seal red */
+  --pin-color: #b03a2e;
+}
+
+/* Ink Paper theme · Ink Night — warm ink black, pale paper text */
+[data-theme='ink-night'] {
+  --bg-primary: #1e1c19;
+  --bg-secondary: #181613;
+  --bg-tertiary: #2a2723;
+  --bg-hover: #2a2723;
+  --bg-active: rgba(240, 235, 225, 0.08);
+
+  --text-primary: #e8e2d6;
+  --text-secondary: #b3ab9c;
+  --text-tertiary: #7d766a;
+  --text-active: #e06a5a;
+
+  --border-primary: #33302a;
+  --border-secondary: #2a2723;
+
+  --search-bg: rgba(42, 39, 35, 0.85);
+
+  --overlay-bg: rgba(8, 7, 6, 0.55);
+  --card-bg: #2a2723;
+  --card-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+
+  --code-bg: #2e2b26;
+  --pre-bg: #23211d;
+
+  --tag-bg: rgba(224, 106, 90, 0.14);
+  --tag-text: #e06a5a;
+
+  --highlight-bg: rgba(241, 229, 192, 0.2);
+
+  --accent-bg: linear-gradient(135deg, #6e675e, #3e3a34);
+  --accent-fg: #f0ebe0;
+  --accent-shadow: 0 4px 12px -4px rgba(0, 0, 0, 0.4);
+  --accent-soft-bg: rgba(240, 235, 225, 0.08);
+  --accent-solid: #e06a5a;
+
+  --pin-color: #e06a5a;
 }

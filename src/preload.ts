@@ -48,7 +48,6 @@ contextBridge.exposeInMainWorld('api', {
     pdf: (title: string, content: string) => ipcRenderer.invoke('export:pdf', title, content),
   },
   images: {
-    saveFromPath: (filePath: string) => ipcRenderer.invoke('images:saveFromPath', filePath),
     saveFromBuffer: (buffer: ArrayBuffer, mimeType: string) =>
       ipcRenderer.invoke('images:saveFromBuffer', buffer, mimeType),
     pickFile: () => ipcRenderer.invoke('images:pickFile'),
@@ -65,12 +64,31 @@ contextBridge.exposeInMainWorld('api', {
       requestId: string;
       messages: { role: 'user' | 'assistant'; content: string }[];
       noteContext?: string;
+      scope?: 'notes';
     }) => ipcRenderer.invoke('ai:chatStream', payload),
     abortChat: (requestId: string) => ipcRenderer.invoke('ai:abortChat', requestId),
     onChatChunk: (cb: (data: { requestId: string; delta: string }) => void) => {
       const listener = (_e: unknown, data: { requestId: string; delta: string }) => cb(data);
       ipcRenderer.on('ai:chat-chunk', listener);
       return () => ipcRenderer.removeListener('ai:chat-chunk', listener);
+    },
+    onChatThinking: (
+      cb: (data: { requestId: string; delta: string; tokens?: number }) => void,
+    ) => {
+      const listener = (_e: unknown, data: { requestId: string; delta: string; tokens?: number }) =>
+        cb(data);
+      ipcRenderer.on('ai:chat-thinking', listener);
+      return () => ipcRenderer.removeListener('ai:chat-thinking', listener);
+    },
+    onChatSources: (
+      cb: (data: { requestId: string; sources: { id: string; title: string }[] }) => void,
+    ) => {
+      const listener = (
+        _e: unknown,
+        data: { requestId: string; sources: { id: string; title: string }[] },
+      ) => cb(data);
+      ipcRenderer.on('ai:chat-sources', listener);
+      return () => ipcRenderer.removeListener('ai:chat-sources', listener);
     },
     onChatDone: (cb: (data: { requestId: string; fullText: string }) => void) => {
       const listener = (_e: unknown, data: { requestId: string; fullText: string }) => cb(data);

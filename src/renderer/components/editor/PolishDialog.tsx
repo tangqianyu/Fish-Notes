@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { diffWordsWithSpace, type Change } from 'diff';
+import { SparklesIcon } from '../icons';
 
 interface PolishDialogProps {
   /** 加载中（AI 还没返回）。loading 时显示 spinner，按钮禁用。 */
@@ -61,7 +62,7 @@ export default function PolishDialog({
           style={{ borderColor: 'var(--border-primary)' }}
         >
           <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
-            ✨ {t('AI Polish Suggestion')}
+            <SparklesIcon size={16} style={{ display: 'inline', verticalAlign: '-2px', color: 'var(--accent-solid)' }} /> {t('AI Polish Suggestion')}
           </h2>
           <div className="flex items-center gap-2">
             {polished && !loading && !error && (
@@ -144,7 +145,7 @@ export default function PolishDialog({
                 color: '#ef4444',
               }}
             >
-              <div className="font-semibold mb-1">❌ {t('Polish failed')}</div>
+              <div className="font-semibold mb-1">{t('Polish failed')}</div>
               <pre className="whitespace-pre-wrap break-all">{error}</pre>
             </div>
           )}

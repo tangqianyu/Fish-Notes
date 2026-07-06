@@ -177,7 +177,7 @@ body {
 }
 
 .markdown-preview .hashtag {
-  background-color: var(--tag-bg);
+  background: var(--tag-bg);
   color: var(--tag-text);
   padding: 0.1em 0.4em;
   border-radius: 0.375rem;
@@ -186,10 +186,145 @@ body {
 
 .markdown-preview input[type='checkbox'] {
   margin-right: 0.4em;
+  accent-color: var(--accent-solid, var(--text-active));
+}
+
+/* ========== Gradient accents & lively micro-motions (1b design language) ========== */
+
+.markdown-preview blockquote {
+  border-left-color: var(--accent-solid);
+}
+
+.markdown-preview th {
+  background: var(--accent-soft-bg);
+}
+
+/* Sidebar nav / tag rows: hover nudges right */
+.fn-nav-item {
+  transition:
+    background-color 0.15s,
+    color 0.15s,
+    transform 0.15s;
+}
+
+.fn-nav-item:not(.fn-nav-active):hover {
+  background-color: var(--bg-hover);
+  transform: translateX(2px);
+}
+
+/* Note list cards: hover lifts, selected gets accent ring + soft glow */
+.fn-note-item {
+  transition:
+    background-color 0.15s,
+    transform 0.15s,
+    box-shadow 0.15s;
+}
+
+.fn-note-item:not(.fn-note-active):hover {
+  background-color: var(--bg-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px -8px color-mix(in srgb, var(--accent-solid) 40%, transparent);
+}
+
+.fn-note-active {
+  background-color: var(--card-bg);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--accent-solid) 35%, transparent),
+    0 8px 20px -10px color-mix(in srgb, var(--accent-solid) 45%, transparent);
+}
+
+/* Cinnamoroll: the selected note card wears a blush-pink ring instead */
+[data-theme='cinnamoroll'] .fn-note-active,
+[data-theme='cinnamoroll-night'] .fn-note-active {
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--pin-color) 55%, transparent),
+    0 8px 20px -10px color-mix(in srgb, var(--pin-color) 50%, transparent);
+}
+
+/* Accent chip buttons (e.g. new note): hover pops */
+.fn-accent-btn {
+  transition:
+    transform 0.15s,
+    box-shadow 0.15s,
+    opacity 0.15s;
+}
+
+.fn-accent-btn:hover {
+  transform: scale(1.08);
+  opacity: 1 !important;
+}
+
+.fn-accent-btn:active {
+  transform: scale(0.95);
+}
+
+/* Editor toolbar buttons & mode tabs: hover raises */
+.fn-tool-btn {
+  transition:
+    background-color 0.15s,
+    color 0.15s,
+    transform 0.15s;
+}
+
+.fn-tool-btn:hover {
+  background-color: var(--bg-hover);
+  transform: translateY(-1px);
 }
 
 /* AI assistant floating ball: breathing dot while streaming */
 @keyframes fish-breathe {
   0%, 100% { opacity: 1; transform: scale(1); }
   50% { opacity: 0.4; transform: scale(0.7); }
+}
+
+/* AI assistant: animated typing dots while waiting for the first token */
+.fn-typing {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 0;
+}
+
+.fn-typing span {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: fn-typing-bounce 1.2s infinite ease-in-out;
+}
+
+.fn-typing span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.fn-typing span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes fn-typing-bounce {
+  0%,
+  60%,
+  100% {
+    opacity: 0.25;
+    transform: translateY(0);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+
+/* soft pulse for the live "thinking" indicator */
+.fn-pulse {
+  animation: fn-pulse 1.6s infinite ease-in-out;
+}
+
+@keyframes fn-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
 }

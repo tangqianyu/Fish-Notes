@@ -1,5 +1,13 @@
 import { useMemo, useCallback, forwardRef, type MouseEvent } from 'react';
 import { marked } from 'marked';
+import DOMPurify from 'dompurify';
+
+// Allow http(s)/mailto/tel links and our own fish-image: scheme; strip everything else
+// (javascript:, inline event handlers, <script>, etc.) from rendered note content.
+const SANITIZE_CONFIG = {
+  ADD_ATTR: ['target', 'rel'],
+  ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto|tel|fish-image):|[^a-z]|[a-z+.-]+(?:[^a-z+.-:]|$)|#)/i,
+};
 
 interface MarkdownPreviewProps {
   value: string;
@@ -60,6 +68,9 @@ function renderMarkdown(md: string): string {
   );
 
   let html = marked.parse(processed, { async: false, breaks: true, gfm: true }) as string;
+  // Sanitize marked's output before our trusted post-processing — note content may
+  // contain <script>, onerror=, javascript: links, etc.
+  html = DOMPurify.sanitize(html, SANITIZE_CONFIG) as string;
   for (let i = 0; i < tagPlaceholders.length; i++) {
     html = html.replace(`%%HASHTAG_${i}%%`, `<span class="hashtag">${tagPlaceholders[i]}</span>`);
   }

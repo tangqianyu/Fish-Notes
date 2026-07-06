@@ -60,7 +60,7 @@ src/
 │   │   │   ├── EditorToolbar.tsx        # Markdown 快捷输入工具栏（Tooltip + 平台感知快捷键）
 │   │   │   ├── TablePicker.tsx          # 8×8 网格选择器（hover 高亮、点击插入对齐表格）
 │   │   │   └── extensions/
-│   │   │       ├── markdownCommands.ts  # 工具栏 + 键盘共享命令（toggleBold/List/insertTable...）
+│   │   │       ├── markdownCommands.ts  # 工具栏 + 键盘共享命令（toggleBold/List/insertTable/formatTable...）
 │   │   │       ├── smartTyping.ts       # 列表续行 / 空列表退出 keymap
 │   │   │       ├── imageHandling.ts     # 拖拽/粘贴图片 → fish-image:// 协议
 │   │   │       └── themes.ts            # 4 个 app 主题对应的 CodeMirror 主题
@@ -92,7 +92,7 @@ src/
 
 **3 Tab 切换**: MD（纯源码）/ Preview（纯渲染）/ Split（左右分屏，百分比同步滚动）。状态持久化到 localStorage（`fish-notes:editor-mode`）。Cmd+1/2/3 切换。
 
-**工具栏**: 默认显示，覆盖 B/I/S/H(下拉 1-6)/quote/link/inline-code/code-block/ul/ol/task/image/hr/table-picker。每个按钮带 Tooltip（label + 平台感知 kbd 快捷键），通过 localStorage `fish-notes:editor-toolbar` 控制显隐。
+**工具栏**: 默认显示，覆盖 B/I/S/H(下拉 1-6)/quote/link/inline-code/code-block/ul/ol/task/image/hr/table-picker/format-table。每个按钮带 Tooltip（label + 平台感知 kbd 快捷键），通过 localStorage `fish-notes:editor-toolbar` 控制显隐。
 
 **Markdown 快捷输入**（4 层叠加）:
 
@@ -104,6 +104,7 @@ src/
 **表格支持**:
 
 - `insertTable(rows, cols)` 命令插入对齐的空表模板，光标落在首个 header 单元格
+- `formatTable` 命令检测光标当前行所在的表格，找每列最大宽度，重排所有单元格 padding 一致，保留对齐标记（`:--` / `--:`）
 - `TablePicker` 是网格选择器组件，hover 高亮左上区域，顶部显示 "N × M"，点击触发 `insertTable`
 
 **主题适配**: `extensions/themes.ts` 为 4 个 app 主题各写一份 EditorView.theme + HighlightStyle，通过 `useTheme()` 选择。编辑器以 `noteId-theme-language` 为 React key，主题/语言切换时完全重建。

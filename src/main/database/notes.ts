@@ -9,6 +9,8 @@ export interface NoteData {
   id: string;
   title: string;
   content: string;
+  /** plain-text form of content (used for list previews and FTS); '' for locked notes */
+  contentText: string;
   createdAt: string;
   updatedAt: string;
   isTrashed: boolean;
@@ -39,6 +41,7 @@ export function createNote(): NoteData {
     id,
     title: '',
     content: '',
+    contentText: '',
     createdAt: now,
     updatedAt: now,
     isTrashed: false,
@@ -102,6 +105,12 @@ export function updateNote(
     if (key) {
       updateData.content = encrypt(data.content, key);
       updateData.contentText = '';
+    } else {
+      // Session is locked (no key): NEVER persist the incoming plaintext into an
+      // encrypted note. Drop the content/contentText fields so a stray save can't
+      // clobber the ciphertext with plaintext.
+      delete updateData.content;
+      delete updateData.contentText;
     }
   }
 

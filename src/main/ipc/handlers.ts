@@ -26,6 +26,7 @@ import {
 } from '../ai';
 import { buildKbContext } from '../ai/retrieval';
 import * as chatsDb from '../database/chats';
+import { importFiles } from '../import';
 
 function getSetting(key: string): string | undefined {
   const rawDb = getRawDatabase();
@@ -190,6 +191,9 @@ export function registerIpcHandlers() {
     images.saveImageFromBuffer(Buffer.from(buffer), mimeType),
   );
   ipcMain.handle('images:pickFile', () => images.pickImageFile());
+
+  // Import — native multi-select picker → new notes (md / html / pdf)
+  ipcMain.handle('import:files', () => importFiles());
 
   // AI
   ipcMain.handle('ai:getConfig', () => getAIConfigPublic());

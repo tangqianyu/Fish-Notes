@@ -74,6 +74,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
 interface AppContextValue {
   state: AppState;
   createNote: () => Promise<void>;
+  importNotes: () => Promise<ImportResult>;
   selectNote: (id: string | null) => void;
   updateNoteTitle: (id: string, title: string) => void;
   updateNoteContent: (id: string, content: string) => void;
@@ -165,6 +166,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
     }
   }, [state.viewMode, state.selectedTagId, state.tags, refreshTags]);
+
+  const importNotes = useCallback(async () => {
+    const result = await window.api.import.files();
+    if (result.created.length) {
+      // Tag imported notes with the current tag when importing inside a tag view.
+      if (state.viewMode === 'tag' && state.selectedTagId) {
+        const tag = state.tags.find((tg) => tg.id === state.selectedTagId);
+        if (tag) {
+          for (const note of result.created) {
+            await window.api.tags.setNoteTags(note.id, [tag.name]);
+          }
+          await refreshTags();
+        }
+      }
+      await refreshNotes();
+      dispatch({ type: 'SELECT_NOTE', id: result.created[0].id });
+    }
+    return result;
+  }, [state.viewMode, state.selectedTagId, state.tags, refreshTags, refreshNotes]);
 
   const selectNote = useCallback((id: string | null) => {
     dispatch({ type: 'SELECT_NOTE', id });
@@ -322,6 +342,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     () => ({
       state,
       createNote,
+      importNotes,
       selectNote,
       updateNoteTitle,
       updateNoteContent,
@@ -349,6 +370,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [
       state,
       createNote,
+      importNotes,
       selectNote,
       updateNoteTitle,
       updateNoteContent,

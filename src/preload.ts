@@ -52,6 +52,9 @@ contextBridge.exposeInMainWorld('api', {
       ipcRenderer.invoke('images:saveFromBuffer', buffer, mimeType),
     pickFile: () => ipcRenderer.invoke('images:pickFile'),
   },
+  import: {
+    files: () => ipcRenderer.invoke('import:files'),
+  },
   ai: {
     getConfig: () => ipcRenderer.invoke('ai:getConfig'),
     setConfig: (cfg: { token: string; model: string; claudePath?: string }) =>

@@ -5,6 +5,7 @@ import { useAssistant } from '../contexts/AssistantContext';
 import PasswordPrompt from './PasswordPrompt';
 import { buildNotePreview } from '../utils/mdUtils';
 import { PinIcon, RobotIcon } from './icons';
+import { message } from './message';
 
 interface NoteListProps {
   width: number;
@@ -22,6 +23,7 @@ function NoteList({ width, onResizeStart }: NoteListProps) {
   const {
     state,
     createNote,
+    importNotes,
     selectNote,
     trashNote,
     restoreNote,
@@ -38,6 +40,10 @@ function NoteList({ width, onResizeStart }: NoteListProps) {
 
   const [contextMenu, setContextMenu] = useState<NoteContextMenu | null>(null);
   const [showPasswordPrompt, setShowPasswordPrompt] = useState(false);
+  const [showNewMenu, setShowNewMenu] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const newMenuRef = useRef<HTMLDivElement>(null);
+  const newMenuTimerRef = useRef<number | null>(null);
   const pendingActionRef = useRef<(() => Promise<void>) | null>(null);
 
   const headerLabel = viewMode === 'trash' ? t('Trash') : t('All Notes');
@@ -48,6 +54,58 @@ function NoteList({ width, onResizeStart }: NoteListProps) {
     document.addEventListener('click', handler);
     return () => document.removeEventListener('click', handler);
   }, [contextMenu]);
+
+  // Hover-driven new/import dropdown. A short close delay lets the pointer travel
+  // across the small gap from the button to the menu without it disappearing.
+  const openNewMenu = useCallback(() => {
+    if (newMenuTimerRef.current) {
+      clearTimeout(newMenuTimerRef.current);
+      newMenuTimerRef.current = null;
+    }
+    setShowNewMenu(true);
+  }, []);
+
+  const scheduleCloseNewMenu = useCallback(() => {
+    if (newMenuTimerRef.current) clearTimeout(newMenuTimerRef.current);
+    newMenuTimerRef.current = window.setTimeout(() => setShowNewMenu(false), 150);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (newMenuTimerRef.current) clearTimeout(newMenuTimerRef.current);
+    };
+  }, []);
+
+  const handleNewNote = useCallback(() => {
+    setShowNewMenu(false);
+    createNote();
+  }, [createNote]);
+
+  const handleImport = useCallback(async () => {
+    setShowNewMenu(false);
+    if (importing) return;
+    setImporting(true);
+    try {
+      const result = await importNotes();
+      if (result.created.length) {
+        message.success(t('Imported {{n}} notes', { n: result.created.length }));
+      }
+      if (result.failed.length) {
+        message.error(
+          t('Failed to import {{n}} files: {{names}}', {
+            n: result.failed.length,
+            names: result.failed.map((f) => f.name).join(', '),
+          }),
+        );
+      } else if (!result.created.length) {
+        // user cancelled the dialog — no toast
+      }
+    } catch (e) {
+      message.error(e instanceof Error ? e.message : String(e));
+    } finally {
+      setImporting(false);
+    }
+  }, [importing, importNotes, t]);
 
   const handleContextMenu = useCallback(
     (e: React.MouseEvent, noteId: string) => {
@@ -171,25 +229,54 @@ function NoteList({ width, onResizeStart }: NoteListProps) {
           {headerLabel}
         </span>
         {viewMode !== 'trash' && (
-          <button
-            onClick={createNote}
-            className="fn-accent-btn p-1 rounded-lg transition-all hover:opacity-90"
-            style={{
-              background: 'var(--accent-bg)',
-              color: 'var(--accent-fg)',
-              boxShadow: 'var(--accent-shadow)',
-            }}
-            title={t('New Note')}
+          <div
+            ref={newMenuRef}
+            className="relative"
+            onMouseEnter={openNewMenu}
+            onMouseLeave={scheduleCloseNewMenu}
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 4v16m8-8H4"
-              />
-            </svg>
-          </button>
+            <button
+              onClick={openNewMenu}
+              className="fn-accent-btn p-1 rounded-lg transition-all hover:opacity-90"
+              style={{
+                background: 'var(--accent-bg)',
+                color: 'var(--accent-fg)',
+                boxShadow: 'var(--accent-shadow)',
+              }}
+              title={t('New Note')}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 4v16m8-8H4"
+                />
+              </svg>
+            </button>
+            {showNewMenu && (
+              <div
+                className="absolute right-0 top-full mt-1 w-max rounded-lg shadow-lg border py-1 z-50"
+                style={{
+                  backgroundColor: 'var(--card-bg)',
+                  borderColor: 'var(--border-primary)',
+                  boxShadow: 'var(--card-shadow)',
+                }}
+              >
+                <NewMenuItem
+                  label={t('New blank note')}
+                  onClick={handleNewNote}
+                  icon="M12 4v16m8-8H4"
+                />
+                <NewMenuItem
+                  label={importing ? t('Importing...') : t('Import (md / html)')}
+                  onClick={handleImport}
+                  disabled={importing}
+                  icon="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M12 4v12m0 0l-4-4m4 4l4-4"
+                />
+              </div>
+            )}
+          </div>
         )}
       </div>
 
@@ -425,6 +512,38 @@ function NoteContextMenuPopup({
     >
       {children}
     </div>
+  );
+}
+
+function NewMenuItem({
+  label,
+  onClick,
+  icon,
+  disabled = false,
+}: {
+  label: string;
+  onClick: () => void;
+  icon: string;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className="w-full flex items-center gap-2 whitespace-nowrap text-left px-3 py-1.5 text-sm transition-colors hover:opacity-80 disabled:opacity-50"
+      style={{ color: 'var(--text-secondary)' }}
+    >
+      <svg
+        className="w-4 h-4 shrink-0"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+        style={{ color: 'var(--text-tertiary)' }}
+      >
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={icon} />
+      </svg>
+      {label}
+    </button>
   );
 }
 

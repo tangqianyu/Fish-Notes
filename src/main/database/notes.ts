@@ -50,6 +50,31 @@ export function createNote(): NoteData {
   };
 }
 
+/** Create a note pre-filled with imported content (Markdown). Title/content are trusted
+ *  to already be plain text/Markdown; content_text is derived for FTS. */
+export function createNoteFromImport(title: string, content: string): NoteData {
+  const db = getDatabase();
+  const id = generateId();
+  const now = new Date().toISOString();
+  const contentText = stripMarkdownForFts(content);
+
+  db.insert(notes)
+    .values({ id, title, content, contentText, createdAt: now, updatedAt: now })
+    .run();
+
+  return {
+    id,
+    title,
+    content,
+    contentText,
+    createdAt: now,
+    updatedAt: now,
+    isTrashed: false,
+    isPinned: false,
+    isLocked: false,
+  };
+}
+
 export function getAllNotes(): NoteData[] {
   const db = getDatabase();
   const rows = db.select().from(notes).where(eq(notes.isTrashed, false)).all() as NoteData[];

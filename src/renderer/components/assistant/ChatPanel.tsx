@@ -289,6 +289,10 @@ export default function ChatPanel() {
   }, [input, isStreaming, send]);
 
   const onKeyDown = (e: React.KeyboardEvent) => {
+    // Ignore Enter while an IME composition is active — pressing Enter to confirm a
+    // candidate (e.g. an English word typed under a Chinese IME) must commit the text,
+    // not send the message. keyCode 229 covers browsers that don't set isComposing.
+    if (e.nativeEvent.isComposing || e.keyCode === 229) return;
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       submit();

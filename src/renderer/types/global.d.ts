@@ -70,6 +70,9 @@ interface Window {
       saveFromBuffer: (buffer: ArrayBuffer, mimeType: string) => Promise<string>;
       pickFile: () => Promise<string | null>;
     };
+    import: {
+      files: () => Promise<ImportResult>;
+    };
     ai: {
       getConfig: () => Promise<PublicAIConfig>;
       setConfig: (cfg: AIConfig) => Promise<void>;
@@ -121,6 +124,11 @@ interface PublicAIConfig {
   model: string;
   claudePath?: string;
   hasToken: boolean;
+}
+
+interface ImportResult {
+  created: NoteData[];
+  failed: { name: string; error: string }[];
 }
 
 interface ChatMessage {
